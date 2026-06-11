@@ -7,11 +7,12 @@ import { Player } from './components/Player';
 import { OtherPlayers } from './components/OtherPlayers';
 import { Treasure } from './components/Treasure';
 import { ExitGate } from './components/ExitGate';
+import { Enemy } from './components/Enemy';
 import { useGameStore } from './store';
 import { generateMaze } from './utils/mazeGenerator';
 
 function GameScene() {
-  const { currentLevel, setMazeData, treasures, exitPosition, playerStartPosition, setTotalTreasures } = useGameStore();
+  const { currentLevel, setMazeData, treasures, enemies, exitPosition, playerStartPosition, setTotalTreasures } = useGameStore();
 
   useEffect(() => {
     // Generate new maze when level changes
@@ -36,13 +37,24 @@ function GameScene() {
       z: (t.z - heightOffset) * CELL_SIZE,
       id: `treasure-${currentLevel}-${i}`
     }));
+    
+    const storeEnemies = result.enemies.map((e, i) => ({
+      startPos: [e.x, e.z] as [number, number],
+      type: e.type,
+      id: `enemy-${currentLevel}-${i}`
+    }));
 
-    setMazeData(result.data, worldExit, worldStart, worldTreasures);
+    setMazeData(result.data, worldExit, worldStart, worldTreasures, storeEnemies);
     setTotalTreasures(worldTreasures.length);
-    // Optionally teleport player to start (needs Player component refactoring to force reset rigid body, 
-    // or we just trust the component remounts or handles it. For now, Rapier might keep the old position.
-    // We can force remount using key={currentLevel})
   }, [currentLevel, setMazeData, setTotalTreasures]);
+
+  useEffect(() => {
+    // Timer Loop
+    const interval = setInterval(() => {
+      useGameStore.getState().updateTime(1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
 
   if (!exitPosition) return null;
 
@@ -54,6 +66,10 @@ function GameScene() {
       
       {treasures.map((t: any) => (
         <Treasure key={t.id} id={t.id} position={[t.x, 1, t.z]} />
+      ))}
+      
+      {enemies.map((e: any) => (
+        <Enemy key={e.id} id={e.id} type={e.type} startPos={e.startPos} />
       ))}
       
       <ExitGate position={[exitPosition[0], 1.5, exitPosition[1]]} />
