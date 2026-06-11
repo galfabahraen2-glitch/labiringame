@@ -2,7 +2,7 @@ import React from 'react';
 import { RigidBody } from '@react-three/rapier';
 
 // A simple map representation (1 = wall, 0 = empty)
-const mazeData = [
+export const mazeData = [
   [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
   [1, 0, 0, 0, 1, 0, 0, 0, 0, 1],
   [1, 0, 1, 0, 1, 0, 1, 1, 0, 1],
@@ -31,7 +31,7 @@ export const Maze: React.FC = () => {
               receiveShadow
             >
               <boxGeometry args={[CELL_SIZE, WALL_HEIGHT, CELL_SIZE]} />
-              <meshStandardMaterial color="#2a2a35" roughness={0.9} />
+              <meshStandardMaterial color="#b0b0b0" roughness={0.7} />
             </mesh>
           </RigidBody>
         );
@@ -49,7 +49,7 @@ export const Maze: React.FC = () => {
           receiveShadow
         >
           <planeGeometry args={[100, 100]} />
-          <meshStandardMaterial color="#1a1a25" roughness={0.8} />
+          <meshStandardMaterial color="#808080" roughness={0.8} />
         </mesh>
       </RigidBody>
       
