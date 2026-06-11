@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import { useGameStore } from '../store';
+import { Sparkles } from '@react-three/drei';
 import * as THREE from 'three';
 
 interface ExitGateProps {
@@ -10,7 +11,7 @@ interface ExitGateProps {
 
 export const ExitGate: React.FC<ExitGateProps> = ({ position }) => {
   const meshRef = useRef<THREE.Mesh>(null);
-  const setGameState = useGameStore(state => state.setGameState);
+  const { setGameState, currentLevel, nextLevel } = useGameStore();
 
   useFrame((state) => {
     if (meshRef.current) {
@@ -20,14 +21,19 @@ export const ExitGate: React.FC<ExitGateProps> = ({ position }) => {
 
   return (
     <RigidBody type="fixed" colliders={false} sensor onIntersectionEnter={() => {
-      setGameState('victory');
+      if (currentLevel >= 121) {
+        setGameState('victory'); // Finished Crystal Palace
+      } else {
+        nextLevel(); // Automatically moves to next level and triggers generation
+      }
     }}>
       <CuboidCollider args={[1, 2, 1]} position={position} />
       <mesh ref={meshRef} position={position}>
         <torusGeometry args={[1.5, 0.2, 16, 100]} />
-        <meshStandardMaterial color="#ff00ff" emissive="#ff00ff" emissiveIntensity={2} wireframe={true} />
+        <meshStandardMaterial color={currentLevel > 120 ? "#ffffff" : "#ff00ff"} emissive={currentLevel > 120 ? "#ffffff" : "#ff00ff"} emissiveIntensity={2} wireframe={true} />
       </mesh>
-      <pointLight position={position} color="#ff00ff" distance={5} intensity={3} />
+      <pointLight position={position} color={currentLevel > 120 ? "#ffffff" : "#ff00ff"} distance={5} intensity={3} />
+      <Sparkles position={position} count={50} scale={3} size={4} speed={2} color={currentLevel > 120 ? "#ffffff" : "#ff00ff"} />
     </RigidBody>
   );
 };

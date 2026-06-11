@@ -7,7 +7,11 @@ import { network } from '../network';
 
 const SPEED = 5;
 
-export const Player: React.FC = () => {
+interface PlayerProps {
+  startPos?: [number, number] | null;
+}
+
+export const Player: React.FC<PlayerProps> = ({ startPos }) => {
   const body = useRef<RapierRigidBody>(null);
   
   // Limbs for animation
@@ -71,11 +75,17 @@ export const Player: React.FC = () => {
     // Update camera to follow player (3rd person)
     const cameraPos = new THREE.Vector3(playerPos.x, playerPos.y + 5, playerPos.z + 6);
     state.camera.position.lerp(cameraPos, 0.1);
-    state.camera.lookAt(playerPos.x, playerPos.y + 1, playerPos.z);
+    // Update store position
+    const pos = body.current.translation();
+    setPlayerPosition([pos.x, pos.z]);
+
   });
 
+  const initialX = startPos ? startPos[0] : 0;
+  const initialZ = startPos ? startPos[1] : 0;
+
   return (
-    <RigidBody ref={body} colliders={false} mass={1} type="dynamic" position={[0, 2, 0]} enabledRotations={[false, false, false]}>
+    <RigidBody ref={body} colliders={false} mass={1} type="dynamic" position={[initialX, 3, initialZ]} enabledRotations={[false, false, false]}>
       <CapsuleCollider args={[0.6, 0.4]} position={[0, 0, 0]} />
       
       {/* Blocky Character */}

@@ -1,18 +1,19 @@
 import React from 'react';
 import { useGameStore } from '../store';
-import { mazeData } from './Maze';
+import { CELL_SIZE } from './Maze';
 
 export const Minimap: React.FC = () => {
-  const { playerPosition } = useGameStore();
-  const CELL_SIZE = 4; // Should match Maze.tsx CELL_SIZE
+  const { playerPosition, mazeData, exitPosition } = useGameStore();
+
+  if (!mazeData || !exitPosition) return null;
 
   // Convert 3D world coordinates back to 2D maze array indices
   const playerGridX = Math.round(playerPosition[0] / CELL_SIZE + mazeData[0].length / 2);
   const playerGridZ = Math.round(playerPosition[1] / CELL_SIZE + mazeData.length / 2);
 
-  // Define exit coordinate roughly (from ExitGate position [0, 1.5, -16])
-  const exitGridX = Math.round(0 / CELL_SIZE + mazeData[0].length / 2);
-  const exitGridZ = Math.round(-16 / CELL_SIZE + mazeData.length / 2);
+  // Define exit coordinate
+  const exitGridX = Math.round(exitPosition[0] / CELL_SIZE + mazeData[0].length / 2);
+  const exitGridZ = Math.round(exitPosition[1] / CELL_SIZE + mazeData.length / 2);
 
   return (
     <div style={{

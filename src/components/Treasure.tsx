@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
+import { Sparkles } from '@react-three/drei';
 import { useGameStore } from '../store';
 import * as THREE from 'three';
 
@@ -34,6 +35,7 @@ export const Treasure: React.FC<TreasureProps> = ({ position }) => {
         <meshStandardMaterial color="#00e5ff" emissive="#0088ff" emissiveIntensity={1} wireframe={false} />
       </mesh>
       <pointLight position={position} color="#00e5ff" distance={3} intensity={2} />
+      <Sparkles position={position} count={20} scale={1.5} size={2} speed={1} color="#00e5ff" />
     </RigidBody>
   );
 };
