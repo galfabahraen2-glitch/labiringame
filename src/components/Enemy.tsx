@@ -1,151 +1,331 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
-import { RigidBody, RapierRigidBody, CuboidCollider } from '@react-three/rapier';
+import { Sparkles } from '@react-three/drei';
 import * as THREE from 'three';
 import { useGameStore } from '../store';
+import { audio } from '../audioManager';
 import { CELL_SIZE } from './Maze';
 
+export type EnemyType = 'pocong' | 'kuntilanak' | 'genderuwo' | 'iblis' | 'berkepala_binatang';
+
 interface EnemyProps {
-  type: 'pocong' | 'kuntilanak' | 'animalHead';
-  startPos: [number, number]; // Grid x, z
-  id: string;
+  type: EnemyType;
+  initialPosition: [number, number, number];
 }
 
-export const Enemy: React.FC<EnemyProps> = ({ type, startPos }) => {
-  const body = useRef<RapierRigidBody>(null);
-  const meshGroup = useRef<THREE.Group>(null);
-  const { mazeData, damagePlayer, teleportPlayer, isDead } = useGameStore();
+// ─── Pocong (White jumping bundle) ─────────────────────────────────────────
+const PocongBody: React.FC = () => (
+  <group>
+    <mesh position={[0, 0.6, 0]}>
+      <boxGeometry args={[0.5, 1.0, 0.4]} />
+      <meshStandardMaterial color="#f0f0f0" roughness={0.9} />
+    </mesh>
+    <mesh position={[0, 1.2, 0]}>
+      <boxGeometry args={[0.5, 0.5, 0.4]} />
+      <meshStandardMaterial color="#e8e8e8" />
+    </mesh>
+    {/* Tied top knot */}
+    <mesh position={[0, 1.5, 0]}>
+      <sphereGeometry args={[0.15, 8, 8]} />
+      <meshStandardMaterial color="#d0d0d0" />
+    </mesh>
+    {/* Creepy black eyes */}
+    <mesh position={[-0.1, 1.2, 0.21]}><boxGeometry args={[0.1, 0.08, 0.02]} /><meshStandardMaterial color="#1a1a1a" emissive="#ff0000" emissiveIntensity={0.5} /></mesh>
+    <mesh position={[0.1, 1.2, 0.21]}><boxGeometry args={[0.1, 0.08, 0.02]} /><meshStandardMaterial color="#1a1a1a" emissive="#ff0000" emissiveIntensity={0.5} /></mesh>
+  </group>
+);
 
-  const [targetGrid, setTargetGrid] = useState<{x: number, z: number}>({ x: startPos[0], z: startPos[1] });
-  
-  // Calculate world position
-  const widthOffset = mazeData ? mazeData[0].length / 2 : 0;
-  const heightOffset = mazeData ? mazeData.length / 2 : 0;
+// ─── Kuntilanak (Long-haired floating ghost) ────────────────────────────────
+const KuntilanakBody: React.FC = () => (
+  <group>
+    {/* Dress/body */}
+    <mesh position={[0, 0.5, 0]}>
+      <coneGeometry args={[0.45, 1.2, 8]} />
+      <meshStandardMaterial color="#ffffff" transparent opacity={0.85} roughness={0.1} />
+    </mesh>
+    {/* Torso */}
+    <mesh position={[0, 1.1, 0]}>
+      <boxGeometry args={[0.4, 0.4, 0.3]} />
+      <meshStandardMaterial color="#f5f5f5" />
+    </mesh>
+    {/* Head */}
+    <mesh position={[0, 1.55, 0]}>
+      <boxGeometry args={[0.45, 0.45, 0.4]} />
+      <meshStandardMaterial color="#f5f0e8" />
+    </mesh>
+    {/* Long black hair strands */}
+    {[-0.15, 0, 0.15].map((x, i) => (
+      <mesh key={i} position={[x, 1.0, -0.2]}>
+        <boxGeometry args={[0.08, 1.2, 0.06]} />
+        <meshStandardMaterial color="#1a1a1a" />
+      </mesh>
+    ))}
+    {/* Hollow eyes */}
+    <mesh position={[-0.1, 1.58, 0.21]}><boxGeometry args={[0.1, 0.12, 0.02]} /><meshStandardMaterial color="#000000" emissive="#8B0000" emissiveIntensity={1} /></mesh>
+    <mesh position={[0.1, 1.58, 0.21]}><boxGeometry args={[0.1, 0.12, 0.02]} /><meshStandardMaterial color="#000000" emissive="#8B0000" emissiveIntensity={1} /></mesh>
+  </group>
+);
+
+// ─── Genderuwo (Big dark blocky creature) ───────────────────────────────────
+const GenderuwoBody: React.FC = () => (
+  <group>
+    <mesh position={[0, 0.6, 0]}>
+      <boxGeometry args={[0.9, 1.1, 0.7]} />
+      <meshStandardMaterial color="#3d2b1f" roughness={0.9} />
+    </mesh>
+    <mesh position={[0, 1.3, 0]}>
+      <boxGeometry args={[0.75, 0.65, 0.6]} />
+      <meshStandardMaterial color="#3d2b1f" />
+    </mesh>
+    {/* Small horns */}
+    <mesh position={[-0.2, 1.75, 0]} rotation={[0, 0, -0.3]}>
+      <coneGeometry args={[0.07, 0.25, 6]} />
+      <meshStandardMaterial color="#2c1f14" />
+    </mesh>
+    <mesh position={[0.2, 1.75, 0]} rotation={[0, 0, 0.3]}>
+      <coneGeometry args={[0.07, 0.25, 6]} />
+      <meshStandardMaterial color="#2c1f14" />
+    </mesh>
+    {/* Glowing eyes */}
+    <mesh position={[-0.18, 1.35, 0.31]}><boxGeometry args={[0.14, 0.1, 0.02]} /><meshStandardMaterial color="#ff4400" emissive="#ff4400" emissiveIntensity={2} /></mesh>
+    <mesh position={[0.18, 1.35, 0.31]}><boxGeometry args={[0.14, 0.1, 0.02]} /><meshStandardMaterial color="#ff4400" emissive="#ff4400" emissiveIntensity={2} /></mesh>
+    {/* Arms */}
+    <mesh position={[-0.65, 0.8, 0]}><boxGeometry args={[0.3, 0.9, 0.3]} /><meshStandardMaterial color="#3d2b1f" /></mesh>
+    <mesh position={[0.65, 0.8, 0]}><boxGeometry args={[0.3, 0.9, 0.3]} /><meshStandardMaterial color="#3d2b1f" /></mesh>
+  </group>
+);
+
+// ─── Iblis (Red devil with horns & tail) ────────────────────────────────────
+const IblisBody: React.FC = () => (
+  <group>
+    <mesh position={[0, 0.55, 0]}>
+      <boxGeometry args={[0.55, 0.9, 0.4]} />
+      <meshStandardMaterial color="#c0392b" />
+    </mesh>
+    <mesh position={[0, 1.15, 0]}>
+      <boxGeometry args={[0.55, 0.55, 0.45]} />
+      <meshStandardMaterial color="#c0392b" />
+    </mesh>
+    {/* Horns */}
+    <mesh position={[-0.18, 1.55, 0]} rotation={[0, 0, -0.4]}>
+      <coneGeometry args={[0.07, 0.35, 6]} />
+      <meshStandardMaterial color="#922b21" />
+    </mesh>
+    <mesh position={[0.18, 1.55, 0]} rotation={[0, 0, 0.4]}>
+      <coneGeometry args={[0.07, 0.35, 6]} />
+      <meshStandardMaterial color="#922b21" />
+    </mesh>
+    {/* Tail */}
+    <mesh position={[0, 0.3, -0.3]} rotation={[0.5, 0, 0]}>
+      <coneGeometry args={[0.06, 0.5, 6]} />
+      <meshStandardMaterial color="#922b21" />
+    </mesh>
+    {/* Yellow eyes */}
+    <mesh position={[-0.13, 1.18, 0.23]}><boxGeometry args={[0.1, 0.09, 0.02]} /><meshStandardMaterial color="#f39c12" emissive="#f39c12" emissiveIntensity={2} /></mesh>
+    <mesh position={[0.13, 1.18, 0.23]}><boxGeometry args={[0.1, 0.09, 0.02]} /><meshStandardMaterial color="#f39c12" emissive="#f39c12" emissiveIntensity={2} /></mesh>
+  </group>
+);
+
+// ─── Manusia Berkepala Binatang (Human body + animal head) ──────────────────
+const BerkepalaBody: React.FC = () => (
+  <group>
+    <mesh position={[0, 0.55, 0]}>
+      <boxGeometry args={[0.5, 0.9, 0.35]} />
+      <meshStandardMaterial color="#e8c49a" />
+    </mesh>
+    {/* Goat/animal head */}
+    <mesh position={[0, 1.2, 0]}>
+      <boxGeometry args={[0.55, 0.5, 0.6]} />
+      <meshStandardMaterial color="#8B7355" roughness={0.8} />
+    </mesh>
+    {/* Snout */}
+    <mesh position={[0, 1.1, 0.38]}>
+      <boxGeometry args={[0.3, 0.2, 0.2]} />
+      <meshStandardMaterial color="#7a6248" />
+    </mesh>
+    {/* Horns */}
+    <mesh position={[-0.2, 1.55, 0]} rotation={[0, 0, -0.5]}>
+      <cylinderGeometry args={[0.04, 0.02, 0.35, 6]} />
+      <meshStandardMaterial color="#6b5b45" />
+    </mesh>
+    <mesh position={[0.2, 1.55, 0]} rotation={[0, 0, 0.5]}>
+      <cylinderGeometry args={[0.04, 0.02, 0.35, 6]} />
+      <meshStandardMaterial color="#6b5b45" />
+    </mesh>
+    {/* Creepy eyes */}
+    <mesh position={[-0.14, 1.25, 0.31]}><boxGeometry args={[0.1, 0.1, 0.02]} /><meshStandardMaterial color="#f0c040" emissive="#f0c040" emissiveIntensity={1} /></mesh>
+    <mesh position={[0.14, 1.25, 0.31]}><boxGeometry args={[0.1, 0.1, 0.02]} /><meshStandardMaterial color="#f0c040" emissive="#f0c040" emissiveIntensity={1} /></mesh>
+    {/* Legs */}
+    <mesh position={[-0.14, 0.07, 0]}><boxGeometry args={[0.2, 0.5, 0.2]} /><meshStandardMaterial color="#6e5a38" /></mesh>
+    <mesh position={[0.14, 0.07, 0]}><boxGeometry args={[0.2, 0.5, 0.2]} /><meshStandardMaterial color="#6e5a38" /></mesh>
+  </group>
+);
+
+// ─── Enemy config ───────────────────────────────────────────────────────────
+const ENEMY_CONFIG = {
+  pocong:            { speed: 2.5,  detectionRange: 7,  damage: 10, color: '#ccccff', jumpAnim: true  },
+  kuntilanak:        { speed: 3.5,  detectionRange: 10, damage: 15, color: '#cc99ff', jumpAnim: false },
+  genderuwo:         { speed: 1.5,  detectionRange: 8,  damage: 20, color: '#ff6633', jumpAnim: false },
+  iblis:             { speed: 4.0,  detectionRange: 9,  damage: 25, color: '#ff0000', jumpAnim: false },
+  berkepala_binatang:{ speed: 2.0,  detectionRange: 6,  damage: 10, color: '#ffcc66', jumpAnim: false },
+};
+
+// ─── Main Enemy Component ───────────────────────────────────────────────────
+export const Enemy: React.FC<EnemyProps> = ({ type, initialPosition }) => {
+  const groupRef = useRef<THREE.Group>(null);
+  const posRef = useRef(new THREE.Vector3(...initialPosition));
+  const dirRef = useRef(new THREE.Vector3(Math.random() - 0.5, 0, Math.random() - 0.5).normalize());
+  const alertedRef = useRef(false);
+  const alertTimerRef = useRef(0);
+  const animTime = useRef(0);
+  const patrolTimer = useRef(Math.random() * 3);
+
+  const { playerWorldPos, takeDamage, setPlayerWorldPos, mazeData, playerStartPosition, isDead } = useGameStore();
+
+  const cfg = ENEMY_CONFIG[type];
+
+  const teleportPlayer = () => {
+    if (!mazeData || !playerStartPosition) return;
+    // Find random open cell
+    const openCells: [number, number][] = [];
+    for (let z = 0; z < mazeData.length; z++) {
+      for (let x = 0; x < mazeData[z].length; x++) {
+        if (mazeData[z][x] === 0) openCells.push([x, z]);
+      }
+    }
+    if (openCells.length === 0) return;
+    const cell = openCells[Math.floor(Math.random() * openCells.length)];
+    const wx = (cell[0] - mazeData[0].length / 2) * CELL_SIZE;
+    const wz = (cell[1] - mazeData.length / 2) * CELL_SIZE;
+    setPlayerWorldPos([wx, 1, wz]);
+    takeDamage(cfg.damage);
+    audio.playerHit();
+  };
 
   useEffect(() => {
-    // Basic AI Loop: Every 2 seconds, pick a new random adjacent grid to move to
-    const interval = setInterval(() => {
-      if (!mazeData || isDead) return;
-      
-      const currentX = targetGrid.x;
-      const currentZ = targetGrid.z;
-      
-      const neighbors = [
-        { x: currentX + 1, z: currentZ },
-        { x: currentX - 1, z: currentZ },
-        { x: currentX, z: currentZ + 1 },
-        { x: currentX, z: currentZ - 1 },
-      ].filter(n => 
-        n.x > 0 && n.x < mazeData[0].length && 
-        n.z > 0 && n.z < mazeData.length && 
-        mazeData[n.z][n.x] === 0
-      );
+    posRef.current.set(...initialPosition);
+  }, [initialPosition]);
 
-      if (neighbors.length > 0) {
-        const next = neighbors[Math.floor(Math.random() * neighbors.length)];
-        setTargetGrid(next);
-      }
-    }, 2000);
+  useFrame((_, delta) => {
+    if (!groupRef.current || isDead) return;
 
-    return () => clearInterval(interval);
-  }, [mazeData, targetGrid, isDead]);
+    animTime.current += delta;
+    alertTimerRef.current -= delta;
+    patrolTimer.current -= delta;
 
-  useFrame((state) => {
-    if (!body.current || !meshGroup.current || isDead) return;
+    const playerPos3 = new THREE.Vector3(playerWorldPos[0], playerWorldPos[1], playerWorldPos[2]);
+    const dist = posRef.current.distanceTo(playerPos3);
+    const isChasing = dist < cfg.detectionRange;
 
-    // Target world position
-    const targetWorldX = (targetGrid.x - widthOffset) * CELL_SIZE;
-    const targetWorldZ = (targetGrid.z - heightOffset) * CELL_SIZE;
-
-    const currentPos = body.current.translation();
-    const dirX = targetWorldX - currentPos.x;
-    const dirZ = targetWorldZ - currentPos.z;
-
-    const distance = Math.sqrt(dirX * dirX + dirZ * dirZ);
-    
-    // Move towards target
-    if (distance > 0.5) {
-      body.current.setLinvel({ x: (dirX / distance) * 2, y: body.current.linvel().y, z: (dirZ / distance) * 2 }, true);
-      meshGroup.current.rotation.y = Math.atan2(dirX, dirZ);
-    } else {
-      body.current.setLinvel({ x: 0, y: body.current.linvel().y, z: 0 }, true);
+    // Alert sound
+    if (isChasing && !alertedRef.current) {
+      alertedRef.current = true;
+      audio.enemyAlert();
+    } else if (!isChasing) {
+      alertedRef.current = false;
     }
 
-    // Animation
-    const time = state.clock.elapsedTime * 5;
-    if (type === 'pocong') {
-      // Jumping
-      meshGroup.current.position.y = Math.abs(Math.sin(time)) * 1.5;
-    } else if (type === 'kuntilanak') {
-      // Floating
-      meshGroup.current.position.y = Math.sin(time * 0.5) * 0.5 + 1;
+    // Movement
+    let moveDir = new THREE.Vector3();
+    if (isChasing) {
+      moveDir = playerPos3.clone().sub(posRef.current).normalize();
+    } else {
+      // Patrol: change direction randomly
+      if (patrolTimer.current <= 0) {
+        dirRef.current.set(Math.random() - 0.5, 0, Math.random() - 0.5).normalize();
+        patrolTimer.current = 2 + Math.random() * 2;
+      }
+      moveDir = dirRef.current.clone();
+    }
+
+    posRef.current.addScaledVector(moveDir, cfg.speed * delta);
+    posRef.current.y = initialPosition[1]; // keep Y fixed (kuntilanak floats)
+
+    // Kuntilanak floats up and down
+    const floatY = type === 'kuntilanak' 
+      ? initialPosition[1] + Math.sin(animTime.current * 2) * 0.4 + 0.5
+      : initialPosition[1];
+
+    // Pocong jumps
+    const jumpY = (type === 'pocong' && cfg.jumpAnim)
+      ? initialPosition[1] + Math.abs(Math.sin(animTime.current * 3)) * 0.6
+      : floatY;
+
+    groupRef.current.position.set(posRef.current.x, jumpY, posRef.current.z);
+
+    // Face movement direction
+    if (moveDir.length() > 0.01) {
+      const angle = Math.atan2(moveDir.x, moveDir.z);
+      groupRef.current.rotation.y = angle;
+    }
+
+    // Genderuwo sways
+    if (type === 'genderuwo') {
+      groupRef.current.rotation.z = Math.sin(animTime.current * 1.5) * 0.1;
+    }
+
+    // Check if enemy touched player (within 1.5 units)
+    if (dist < 1.5 && alertTimerRef.current <= 0) {
+      alertTimerRef.current = 3; // cooldown 3s before next hit
+      teleportPlayer();
     }
   });
 
-  const handleIntersection = () => {
-    if (isDead) return;
-    damagePlayer(25); // Reduce health by 25
-    
-    // Teleport player randomly
-    if (mazeData) {
-      const emptyCells = [];
-      for (let z = 1; z < mazeData.length - 1; z++) {
-        for (let x = 1; x < mazeData[0].length - 1; x++) {
-          if (mazeData[z][x] === 0) emptyCells.push({ x, z });
-        }
-      }
-      if (emptyCells.length > 0) {
-        const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-        const worldX = (randomCell.x - widthOffset) * CELL_SIZE;
-        const worldZ = (randomCell.z - heightOffset) * CELL_SIZE;
-        teleportPlayer([worldX, worldZ]);
-      }
-    }
-  };
-
-  const initialWorldX = (startPos[0] - widthOffset) * CELL_SIZE;
-  const initialWorldZ = (startPos[1] - heightOffset) * CELL_SIZE;
+  const Body = {
+    pocong: PocongBody,
+    kuntilanak: KuntilanakBody,
+    genderuwo: GenderuwoBody,
+    iblis: IblisBody,
+    berkepala_binatang: BerkepalaBody,
+  }[type];
 
   return (
-    <RigidBody ref={body} colliders={false} mass={1} type="dynamic" position={[initialWorldX, 3, initialWorldZ]} enabledRotations={[false, false, false]}>
-      <CuboidCollider args={[0.5, 1, 0.5]} position={[0, 1, 0]} sensor onIntersectionEnter={handleIntersection} />
-      
-      <group ref={meshGroup}>
-        {type === 'pocong' && (
-          <mesh position={[0, 1, 0]}>
-            <capsuleGeometry args={[0.4, 1.2]} />
-            <meshStandardMaterial color="#ffffff" roughness={0.9} />
-          </mesh>
-        )}
-        
-        {type === 'kuntilanak' && (
-          <group position={[0, 1, 0]}>
-            <mesh>
-              <coneGeometry args={[0.6, 2]} />
-              <meshStandardMaterial color="#ffffff" transparent opacity={0.8} />
-            </mesh>
-            {/* Hair */}
-            <mesh position={[0, 0.8, 0.2]}>
-              <boxGeometry args={[0.5, 0.8, 0.1]} />
-              <meshStandardMaterial color="#000000" />
-            </mesh>
-          </group>
-        )}
+    <group ref={groupRef} position={initialPosition}>
+      <Body />
+      {/* Spooky aura glow */}
+      <pointLight color={cfg.color} intensity={2} distance={4} />
+      <Sparkles count={15} scale={2} size={3} speed={0.8} color={cfg.color} />
+    </group>
+  );
+};
 
-        {type === 'animalHead' && (
-          <group position={[0, 1, 0]}>
-            <mesh position={[0, -0.5, 0]}>
-              <boxGeometry args={[0.6, 1, 0.4]} />
-              <meshStandardMaterial color="#8e44ad" />
-            </mesh>
-            {/* Animal Head (Pig/Cow style box) */}
-            <mesh position={[0, 0.5, 0]}>
-              <boxGeometry args={[0.8, 0.6, 0.8]} />
-              <meshStandardMaterial color="#e74c3c" />
-            </mesh>
-          </group>
-        )}
-      </group>
-    </RigidBody>
+// ─── Enemy Spawner: manages all enemies for current level ───────────────────
+export const EnemySpawner: React.FC = () => {
+  const { currentLevel, mazeData, isDead } = useGameStore();
+  const enemies = useRef<Array<{ type: EnemyType; pos: [number, number, number] }>>([]);
+  const initialized = useRef(false);
+
+  if (!initialized.current && mazeData) {
+    initialized.current = true;
+    const numEnemies = Math.min(2 + Math.floor(currentLevel / 10), 8);
+    const types: EnemyType[] = ['pocong', 'kuntilanak', 'genderuwo', 'iblis', 'berkepala_binatang'];
+    const openCells: [number, number][] = [];
+    for (let z = 0; z < mazeData.length; z++) {
+      for (let x = 0; x < mazeData[z].length; x++) {
+        if (mazeData[z][x] === 0) openCells.push([x, z]);
+      }
+    }
+    enemies.current = [];
+    for (let i = 0; i < numEnemies; i++) {
+      if (openCells.length === 0) break;
+      const idx = Math.floor(Math.random() * openCells.length);
+      const [cx, cz] = openCells.splice(idx, 1)[0];
+      const wx = (cx - mazeData[0].length / 2) * CELL_SIZE;
+      const wz = (cz - mazeData.length / 2) * CELL_SIZE;
+      enemies.current.push({
+        type: types[i % types.length],
+        pos: [wx, 1, wz]
+      });
+    }
+  }
+
+  if (isDead) return null;
+
+  return (
+    <>
+      {enemies.current.map((e, i) => (
+        <Enemy key={i} type={e.type} initialPosition={e.pos} />
+      ))}
+    </>
   );
 };

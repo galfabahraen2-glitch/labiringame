@@ -3,6 +3,7 @@ import { useFrame } from '@react-three/fiber';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import { Sparkles } from '@react-three/drei';
 import { useGameStore } from '../store';
+import { audio } from '../audioManager';
 import * as THREE from 'three';
 
 interface TreasureProps {
@@ -28,6 +29,7 @@ export const Treasure: React.FC<TreasureProps> = ({ position }) => {
     <RigidBody type="fixed" colliders={false} sensor onIntersectionEnter={() => {
       setCollected(true);
       addScore(1);
+      audio.collectTreasure();
     }}>
       <CuboidCollider args={[0.5, 0.5, 0.5]} position={position} />
       <mesh ref={meshRef} position={position} castShadow>

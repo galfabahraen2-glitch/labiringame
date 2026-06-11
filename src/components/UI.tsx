@@ -1,308 +1,394 @@
-import React, { useState } from 'react';
-import { useGameStore } from '../store';
+import React, { useState, useEffect } from 'react';
+import { useGameStore, getTimeForLevel } from '../store';
 import { network } from '../network';
 import { Joystick } from 'react-joystick-component';
-import { Gem, Trophy, Users, Map, Heart, Clock, Settings, ArrowLeft } from 'lucide-react';
+import { Users, Settings, Map, BookOpen, Home } from 'lucide-react';
 import { Minimap } from './Minimap';
+import { audio } from '../audioManager';
 
+const T = {
+  id: {
+    singlePlayer: 'Main Sendiri',
+    createRoom: 'Buat Ruangan',
+    joinRoom: 'Gabung Ruangan',
+    joinPlaceholder: 'Kode Ruangan',
+    waitingFriend: 'Menunggu teman bergabung...',
+    startPlay: 'Mulai Bermain',
+    continue: 'Lanjutkan',
+    newGame: 'Mulai Baru',
+    levelMap: 'Peta Level',
+    settings: 'Pengaturan',
+    records: 'Rekam Jejak',
+    philosophy: '"Dunia adalah labirin gelap. Harta karun adalah amalan. Hantu adalah godaan. Pintu keluar adalah keselamatan. Istana Kristal adalah surga."',
+    back: 'Kembali',
+    levelComplete: 'Level Selesai!',
+    nextLevel: 'Lanjut',
+    finalVictory: 'GELAR SUCI: MASTER LABYRINTH',
+    finalSubtitle: 'Anda telah menyelesaikan perjalanan agung 120 Level! Semua rintangan telah dilalui.',
+    startFresh: 'Mulai Petualangan Baru',
+    timeLeft: 'Sisa Waktu',
+    health: 'Kesehatan',
+    lifeForce: 'Kekuatan Jiwa',
+    collected: 'Dikumpulkan',
+    pause: 'Jeda',
+    resume: 'Lanjut Main',
+    returnMenu: 'Menu Utama',
+    connecting: 'Menghubungkan...',
+    connected: 'Berhasil terhubung!',
+    failConnect: 'Gagal: ',
+    friends: 'Teman',
+  },
+  en: {
+    singlePlayer: 'Play Solo',
+    createRoom: 'Create Room',
+    joinRoom: 'Join Room',
+    joinPlaceholder: 'Room Code',
+    waitingFriend: 'Waiting for friend...',
+    startPlay: 'Start Game',
+    continue: 'Continue',
+    newGame: 'New Game',
+    levelMap: 'Level Map',
+    settings: 'Settings',
+    records: 'Records',
+    philosophy: '"Life is a dark labyrinth. Treasures are good deeds. Ghosts are temptations. The exit is salvation. The Crystal Palace is paradise."',
+    back: 'Back',
+    levelComplete: 'Level Complete!',
+    nextLevel: 'Next',
+    finalVictory: 'SACRED TITLE: MASTER LABYRINTH',
+    finalSubtitle: 'You have completed the grand 120-level journey! All obstacles have been overcome.',
+    startFresh: 'Start New Adventure',
+    timeLeft: 'Time Left',
+    health: 'Health',
+    lifeForce: 'Life Force',
+    collected: 'Collected',
+    pause: 'Pause',
+    resume: 'Resume',
+    returnMenu: 'Main Menu',
+    connecting: 'Connecting...',
+    connected: 'Connected!',
+    failConnect: 'Failed: ',
+    friends: 'Friends',
+  }
+};
+
+// ─── Timer component ────────────────────────────────────────────────────────
+const Timer: React.FC = () => {
+  const { timeLeft, currentLevel, language } = useGameStore();
+  const maxTime = getTimeForLevel(currentLevel);
+  const pct = timeLeft / maxTime;
+  const mins = Math.floor(timeLeft / 60);
+  const secs = Math.floor(timeLeft % 60);
+  const color = pct > 0.5 ? '#27ae60' : pct > 0.25 ? '#f39c12' : '#e74c3c';
+  const t = T[language];
+
+  return (
+    <div style={{
+      background: 'rgba(0,0,0,0.6)',
+      borderRadius: '12px',
+      padding: '0.5rem 0.8rem',
+      backdropFilter: 'blur(6px)',
+      border: `1px solid ${color}50`,
+      minWidth: '120px',
+    }}>
+      <div style={{ color: '#aaa', fontSize: '0.65rem', marginBottom: '3px' }}>⏳ {t.timeLeft}</div>
+      <div style={{ color, fontSize: '1.4rem', fontWeight: 'bold', fontVariantNumeric: 'tabular-nums' }}>
+        {String(mins).padStart(2, '0')}:{String(secs).padStart(2, '0')}
+      </div>
+      <div style={{ height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', marginTop: '4px' }}>
+        <div style={{ width: `${pct * 100}%`, height: '100%', background: color, borderRadius: '2px', transition: 'width 1s linear' }} />
+      </div>
+    </div>
+  );
+};
+
+// ─── Bar component ──────────────────────────────────────────────────────────
+const StatusBar: React.FC<{ value: number; max: number; color: string; icon: string; label: string }> = ({ value, max, color, icon, label }) => (
+  <div style={{ background: 'rgba(0,0,0,0.6)', borderRadius: '10px', padding: '0.4rem 0.7rem', backdropFilter: 'blur(6px)', minWidth: '100px' }}>
+    <div style={{ color: '#aaa', fontSize: '0.6rem', marginBottom: '2px' }}>{icon} {label}</div>
+    <div style={{ height: '6px', background: 'rgba(255,255,255,0.1)', borderRadius: '3px' }}>
+      <div style={{
+        width: `${(value / max) * 100}%`, height: '100%',
+        background: color, borderRadius: '3px',
+        transition: 'width 0.3s ease',
+        boxShadow: `0 0 6px ${color}80`,
+      }} />
+    </div>
+    <div style={{ color, fontSize: '0.7rem', marginTop: '2px', fontWeight: 'bold' }}>{Math.round(value)}</div>
+  </div>
+);
+
+// ─── Pause Menu ─────────────────────────────────────────────────────────────
+const PauseMenu: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const { setGameState, language } = useGameStore();
+  const t = T[language];
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0,
+      background: 'rgba(0,0,0,0.8)',
+      backdropFilter: 'blur(10px)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      zIndex: 50,
+    }}>
+      <div style={{
+        background: 'rgba(10,10,20,0.95)',
+        border: '1px solid rgba(0,229,255,0.3)',
+        borderRadius: '20px',
+        padding: '2.5rem',
+        textAlign: 'center',
+        minWidth: '250px',
+        boxShadow: '0 0 40px rgba(0,229,255,0.1)',
+      }}>
+        <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>⏸</div>
+        <h2 style={{ color: '#00e5ff', marginBottom: '1.5rem', fontFamily: 'Inter, sans-serif' }}>{t.pause}</h2>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <button onClick={onClose} style={btnStyle('#00e5ff')}>▶ {t.resume}</button>
+          <button onClick={() => { audio.buttonClick(); setGameState('settings'); }} style={btnStyle('#8e44ad')}>⚙️ {t.settings}</button>
+          <button onClick={() => { audio.buttonClick(); setGameState('levelmap'); }} style={btnStyle('#f39c12')}>🗺️ {t.levelMap}</button>
+          <button onClick={() => { audio.buttonClick(); setGameState('menu'); }} style={btnStyle('#e74c3c')}>🏠 {t.returnMenu}</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const btnStyle = (color: string) => ({
+  padding: '0.7rem 1.5rem', borderRadius: '20px',
+  border: `1px solid ${color}60`,
+  background: `${color}20`,
+  color: color, cursor: 'pointer',
+  fontSize: '0.95rem', fontWeight: 'bold',
+  width: '100%',
+  transition: 'background 0.15s',
+  fontFamily: 'Inter, sans-serif',
+} as React.CSSProperties);
+
+// ─── Main UI ────────────────────────────────────────────────────────────────
 export const UI: React.FC = () => {
-  const { 
-    gameState, score, totalTreasures, currentLevel, isDead, health, timeRemaining, 
-    playerName, skinColor, shirtColor,
-    setGameState, setLevel, setJoystickInput, resetGame, setPlayerConfig 
-  } = useGameStore();
-  
+  const { gameState, score, totalTreasures, currentLevel, hp, age, language,
+    setGameState, setLevel, setJoystickInput, resetGame, playerName } = useGameStore();
+
   const [roomIdInput, setRoomIdInput] = useState('');
   const [connectionStatus, setConnectionStatus] = useState('');
   const [myRoomId, setMyRoomId] = useState('');
-  const [showSettings, setShowSettings] = useState(false);
-  const [showMap, setShowMap] = useState(false);
-  
-  const [tempName, setTempName] = useState(playerName);
-  const [tempSkin, setTempSkin] = useState(skinColor);
-  const [tempShirt, setTempShirt] = useState(shirtColor);
+  const [showPause, setShowPause] = useState(false);
 
-  const handleJoystickMove = (e: any) => {
-    setJoystickInput(e.x || 0, e.y || 0);
-  };
+  const t = T[language];
+  const isCrystalPalace = currentLevel > 120;
 
-  const handleJoystickStop = () => {
-    setJoystickInput(0, 0);
-  };
+  useEffect(() => {
+    if (gameState === 'playing') {
+      audio.startAmbientMusic();
+    } else {
+      audio.stopAmbientMusic();
+    }
+  }, [gameState]);
 
   const createRoom = async () => {
-    setConnectionStatus('Membuat ruangan...');
+    audio.buttonClick();
+    setConnectionStatus(t.connecting);
     try {
       const id = await network.initHost();
       setMyRoomId(id);
-      setConnectionStatus('Ruangan dibuat! Bagikan kode ini: ' + id);
-    } catch (e: any) {
-      setConnectionStatus('Gagal membuat: ' + e.message);
-    }
+      setConnectionStatus(`${t.createRoom}: ${id}`);
+    } catch (e: any) { setConnectionStatus(t.failConnect + e.message); }
   };
 
   const joinRoom = async () => {
     if (!roomIdInput) return;
-    setConnectionStatus('Menghubungkan ke ' + roomIdInput + '...');
+    audio.buttonClick();
+    setConnectionStatus(t.connecting);
     try {
       await network.joinRoom(roomIdInput);
-      setConnectionStatus('Berhasil terhubung!');
+      setConnectionStatus(t.connected);
       setGameState('playing');
-    } catch (e: any) {
-      setConnectionStatus('Gagal bergabung: ' + e.message);
-    }
+    } catch (e: any) { setConnectionStatus(t.failConnect + e.message); }
   };
 
-  const startNewGame = () => {
-    setLevel(1);
-    setGameState('playing');
-  };
-
-  const formatTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = Math.floor(seconds % 60);
-    return `${m}:${s < 10 ? '0' : ''}${s}`;
-  };
-
-  const isCrystalPalace = currentLevel > 120;
-
-  if (showSettings) {
-    return (
-      <div className="ui-container">
-        <div className="menu-overlay interactive">
-          <h2 className="title" style={{ fontSize: '2.5rem' }}>Pengaturan Pemain</h2>
-          
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', width: '300px', textAlign: 'left', background: 'rgba(0,0,0,0.5)', padding: '2rem', borderRadius: '10px' }}>
-            <div>
-              <label style={{ color: '#00e5ff' }}>Nama Pemain:</label>
-              <input type="text" value={tempName} onChange={e => setTempName(e.target.value)} style={{ width: '100%', padding: '0.5rem', marginTop: '0.5rem' }} />
-            </div>
-            
-            <div>
-              <label style={{ color: '#00e5ff' }}>Warna Kulit:</label>
-              <input type="color" value={tempSkin} onChange={e => setTempSkin(e.target.value)} style={{ width: '100%', height: '40px', marginTop: '0.5rem' }} />
-            </div>
-
-            <div>
-              <label style={{ color: '#00e5ff' }}>Warna Baju:</label>
-              <input type="color" value={tempShirt} onChange={e => setTempShirt(e.target.value)} style={{ width: '100%', height: '40px', marginTop: '0.5rem' }} />
-            </div>
-
-            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-              <button className="btn-start" style={{ flex: 1, background: 'gray' }} onClick={() => setShowSettings(false)}>Batal</button>
-              <button className="btn-start" style={{ flex: 1 }} onClick={() => {
-                setPlayerConfig(tempName, tempSkin, tempShirt);
-                setShowSettings(false);
-              }}>Simpan</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (showMap) {
-    return (
-      <div className="ui-container">
-        <div className="menu-overlay interactive" style={{ background: 'rgba(0,0,0,0.9)' }}>
-          <h2 className="title" style={{ fontSize: '2.5rem', color: '#f1c40f' }}>Peta Perjalanan Hidup</h2>
-          <p style={{ color: '#ccc', marginBottom: '1rem' }}>Anda berada di Level {currentLevel} dari 120</p>
-          
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px', width: '80%', maxWidth: '600px', maxHeight: '50vh', overflowY: 'auto', padding: '1rem', background: '#222', borderRadius: '10px' }}>
-            {Array.from({ length: 120 }).map((_, i) => {
-              const lvl = i + 1;
-              const isCurrent = lvl === currentLevel;
-              const isPassed = lvl < currentLevel;
-              return (
-                <div key={lvl} style={{
-                  width: '30px', height: '30px', 
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  background: isCurrent ? '#00e5ff' : isPassed ? '#2ecc71' : '#555',
-                  color: isCurrent ? '#000' : '#fff',
-                  fontWeight: isCurrent ? 'bold' : 'normal',
-                  borderRadius: '4px',
-                  fontSize: '0.8rem'
-                }}>
-                  {lvl}
-                </div>
-              );
-            })}
-            <div style={{ width: '100%', textAlign: 'center', marginTop: '10px', color: '#f1c40f', fontWeight: 'bold' }}>
-              ISTANA KRISTAL
-            </div>
-          </div>
-
-          <button className="btn-start" style={{ marginTop: '2rem' }} onClick={() => setShowMap(false)}>
-            Kembali
-          </button>
-        </div>
-      </div>
-    );
-  }
+  const NavBtn: React.FC<{ icon: React.ReactNode; label: string; onClick: () => void; color?: string }> = ({ icon, label, onClick, color = '#00e5ff' }) => (
+    <button onClick={onClick} style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
+      padding: '0.5rem 0.8rem',
+      borderRadius: '12px',
+      border: `1px solid ${color}30`,
+      background: `${color}10`,
+      color,
+      cursor: 'pointer', fontSize: '0.65rem',
+      fontFamily: 'Inter, sans-serif',
+    }}>
+      {icon}
+      {label}
+    </button>
+  );
 
   return (
     <div className="ui-container">
+      {/* ── MENU ── */}
       {gameState === 'menu' && (
-        <div className="menu-overlay interactive" style={{ gap: '1rem' }}>
-          <div style={{ position: 'absolute', top: '1rem', right: '1rem', display: 'flex', gap: '1rem' }}>
-            <button className="btn-icon" onClick={() => setShowMap(true)} title="Peta Perjalanan"><Map /></button>
-            <button className="btn-icon" onClick={() => setShowSettings(true)} title="Pengaturan"><Settings /></button>
-          </div>
+        <div className="menu-overlay interactive" style={{ gap: '1rem', maxWidth: '420px' }}>
+          <h1 className="title" style={{ fontSize: '2.5rem', marginBottom: '0.25rem' }}>Labyrinth Quest</h1>
+          <p style={{ color: '#7f8c8d', fontSize: '0.75rem', fontStyle: 'italic', textAlign: 'center', lineHeight: 1.5, padding: '0 1rem' }}>
+            {t.philosophy}
+          </p>
+          {currentLevel > 1 && <p style={{ color: '#00e5ff', fontSize: '1rem' }}>👤 {playerName} — Level {currentLevel}</p>}
 
-          <h1 className="title" style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>Labyrinth Quest</h1>
-          {currentLevel > 1 && <p style={{ color: '#00e5ff', fontSize: '1.2rem', marginBottom: '1rem' }}>Progres Tersimpan: Level {currentLevel}</p>}
-          
           {myRoomId ? (
             <div style={{ background: 'rgba(0,0,0,0.5)', padding: '1rem', borderRadius: '10px', textAlign: 'center' }}>
-              <p style={{ color: '#00e5ff', fontSize: '1.2rem' }}>Kode Ruangan Anda:</p>
-              <h2 style={{ color: '#fff', letterSpacing: '2px', userSelect: 'all' }}>{myRoomId}</h2>
-              <p style={{ color: '#aaa', fontSize: '0.9rem' }}>Menunggu teman bergabung...</p>
-              <button className="btn-start" onClick={() => setGameState('playing')} style={{ marginTop: '1rem' }}>
-                Mulai Bermain
+              <p style={{ color: '#00e5ff', fontSize: '1rem' }}>{t.createRoom}:</p>
+              <h2 style={{ color: '#fff', letterSpacing: '4px', userSelect: 'all', fontFamily: 'monospace' }}>{myRoomId}</h2>
+              <p style={{ color: '#aaa', fontSize: '0.8rem' }}>{t.waitingFriend}</p>
+              <button className="btn-start" onClick={() => { audio.buttonClick(); setGameState('playing'); }} style={{ marginTop: '0.75rem' }}>
+                {t.startPlay}
               </button>
             </div>
           ) : (
             <>
-              {currentLevel > 1 ? (
-                <div style={{ display: 'flex', gap: '1rem' }}>
-                  <button className="btn-start" onClick={() => setGameState('playing')}>
-                    Lanjutkan (Lv. {currentLevel})
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                {currentLevel > 1 && (
+                  <button className="btn-start" onClick={() => { audio.buttonClick(); setGameState('playing'); }}>
+                    ▶ {t.continue} Lv.{currentLevel}
                   </button>
-                  <button className="btn-start" onClick={startNewGame} style={{ background: 'linear-gradient(45deg, #e74c3c, #c0392b)' }}>
-                    Mulai Baru
-                  </button>
-                </div>
-              ) : (
-                <button className="btn-start" onClick={() => setGameState('playing')}>
-                  Mulai Perjalanan
+                )}
+                <button className="btn-start" style={{ background: 'linear-gradient(45deg, #16a085, #1abc9c)' }}
+                  onClick={() => { audio.buttonClick(); setLevel(1); setGameState('playing'); }}>
+                  🆕 {t.newGame}
                 </button>
-              )}
-              
-              <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                <button className="btn-start" style={{ fontSize: '1rem', padding: '0.5rem 1.5rem', background: 'linear-gradient(45deg, #2980b9, #2c3e50)' }} onClick={createRoom}>
-                  Buat Ruangan
+              </div>
+              <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+                <button className="btn-start" style={{ background: 'linear-gradient(45deg, #2980b9, #1a5276)', fontSize: '0.9rem', padding: '0.5rem 1.2rem' }} onClick={createRoom}>
+                  🔗 {t.createRoom}
                 </button>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <input 
-                    type="text" 
-                    placeholder="Kode Ruangan Teman" 
-                    value={roomIdInput}
-                    onChange={(e) => setRoomIdInput(e.target.value)}
-                    style={{ padding: '0.5rem', borderRadius: '5px', border: '1px solid #00e5ff', background: 'rgba(0,0,0,0.5)', color: 'white' }}
-                  />
-                  <button className="btn-start" style={{ fontSize: '1rem', padding: '0.5rem 1.5rem', background: 'linear-gradient(45deg, #27ae60, #2c3e50)' }} onClick={joinRoom}>
-                    Gabung
+                <div style={{ display: 'flex', gap: '0.4rem' }}>
+                  <input type="text" placeholder={t.joinPlaceholder} value={roomIdInput}
+                    onChange={e => setRoomIdInput(e.target.value)}
+                    style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid #00e5ff60', background: 'rgba(0,0,0,0.5)', color: 'white', width: '130px', fontSize: '0.85rem' }} />
+                  <button className="btn-start" style={{ background: 'linear-gradient(45deg, #27ae60, #1e8449)', fontSize: '0.85rem', padding: '0.5rem 1rem' }} onClick={joinRoom}>
+                    {t.joinRoom}
                   </button>
                 </div>
               </div>
             </>
           )}
+          {connectionStatus && <p style={{ color: '#f1c40f', fontSize: '0.85rem' }}>{connectionStatus}</p>}
 
-          {connectionStatus && <p style={{ color: '#f1c40f', marginTop: '1rem' }}>{connectionStatus}</p>}
+          <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <NavBtn icon={<Map size={18} />} label={t.levelMap} onClick={() => { audio.buttonClick(); setGameState('levelmap'); }} color="#00e5ff" />
+            <NavBtn icon={<Settings size={18} />} label={t.settings} onClick={() => { audio.buttonClick(); setGameState('settings'); }} color="#8e44ad" />
+            <NavBtn icon={<BookOpen size={18} />} label={t.records} onClick={() => { audio.buttonClick(); setGameState('trackrecord'); }} color="#f1c40f" />
+          </div>
         </div>
       )}
 
-      {gameState === 'victory' && (
-        <div className="menu-overlay interactive" style={{ background: isCrystalPalace ? 'rgba(255,255,255,0.9)' : undefined }}>
-          {isCrystalPalace ? (
-            <>
-              <h1 className="title" style={{ color: '#f1c40f', textShadow: '0 0 20px #f1c40f' }}>
-                <Trophy size={80} style={{ display: 'block', margin: '0 auto 1rem', color: '#f1c40f' }} />
-                GELAR SUCI: MASTER LABYRINTH
-              </h1>
-              <p style={{ fontSize: '1.2rem', color: '#333', marginBottom: '2rem', maxWidth: '600px', textAlign: 'center' }}>
-                Selamat! Anda telah menaklukkan ke-120 level Labyrinth Quest dan mencapai Istana Kristal legendaris. 
-                Anda mengumpulkan total {score} bekal amal (Harta Karun) di sepanjang perjalanan Anda!
-              </p>
-              <button className="btn-start" onClick={() => { setLevel(1); resetGame(); }} style={{ background: 'linear-gradient(45deg, #f1c40f, #e67e22)' }}>
-                Mulai Perjalanan Baru
-              </button>
-            </>
-          ) : (
-            <>
-              <h1 className="title" style={{ color: '#00e5ff', textShadow: '0 0 20px #00e5ff' }}>
-                <Trophy size={64} style={{ display: 'block', margin: '0 auto 1rem' }} />
-                Level {currentLevel - 1} Selesai!
-              </h1>
-              <p style={{ fontSize: '1.5rem', color: '#fff', marginBottom: '2rem' }}>
-                Total Harta Karun: {score}
-              </p>
-              <button className="btn-start" onClick={() => setGameState('playing')}>
-                Lanjut ke Level {currentLevel}
-              </button>
-            </>
-          )}
-        </div>
-      )}
-
-      {gameState === 'playing' && isDead && (
-        <div className="menu-overlay interactive" style={{ background: 'rgba(0,0,0,0.8)' }}>
-          <h1 className="title" style={{ color: '#e74c3c', textShadow: '0 0 20px #e74c3c' }}>
-            PERJALANAN BERAKHIR
-          </h1>
-          <p style={{ fontSize: '1.2rem', color: '#ccc', marginBottom: '2rem', maxWidth: '600px', textAlign: 'center' }}>
-            Malaikat Pencabut Nyawa telah menjemput Anda. Anda tidak memiliki cukup bekal waktu atau kesehatan untuk melanjutkan perjalanan di labirin dunia ini.
-          </p>
-          <p style={{ color: '#f1c40f', marginBottom: '2rem' }}>
-            Beristirahatlah di alam Limbo sambil menunggu takdir pemain lain...
-          </p>
-          <button className="btn-start" onClick={resetGame}>
-            Ulangi Level Ini
-          </button>
-          <button className="btn-start" style={{ marginTop: '1rem', background: 'gray' }} onClick={() => setGameState('menu')}>
-            Kembali ke Menu
-          </button>
-        </div>
-      )}
-
-      {gameState === 'playing' && !isDead && (
+      {/* ── PLAYING HUD ── */}
+      {gameState === 'playing' && (
         <>
-          <button className="btn-icon interactive" style={{ position: 'absolute', top: '1rem', right: '1rem', zIndex: 100 }} onClick={() => setGameState('menu')} title="Kembali ke Menu">
-            <ArrowLeft />
-          </button>
+          {/* ── TOP CENTER: Always-visible HOME & PAUSE buttons ── */}
+          <div style={{
+            position: 'fixed', top: '12px', left: '50%', transform: 'translateX(-50%)',
+            display: 'flex', gap: '10px', zIndex: 100,
+          }}>
+            <button
+              onClick={() => { audio.buttonClick(); setGameState('menu'); }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                background: 'rgba(231,76,60,0.85)',
+                border: '2px solid rgba(231,76,60,0.6)',
+                borderRadius: '30px',
+                padding: '8px 18px',
+                color: '#fff', cursor: 'pointer',
+                fontSize: '0.9rem', fontWeight: 'bold',
+                backdropFilter: 'blur(8px)',
+                boxShadow: '0 4px 20px rgba(231,76,60,0.4)',
+                fontFamily: 'Inter, sans-serif',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              🏠 {t.returnMenu}
+            </button>
+            <button
+              onClick={() => { audio.buttonClick(); setShowPause(true); }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                background: 'rgba(0,0,0,0.75)',
+                border: '2px solid rgba(255,255,255,0.2)',
+                borderRadius: '30px',
+                padding: '8px 18px',
+                color: '#fff', cursor: 'pointer',
+                fontSize: '0.9rem', fontWeight: 'bold',
+                backdropFilter: 'blur(8px)',
+                fontFamily: 'Inter, sans-serif',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              ⏸ {t.pause}
+            </button>
+          </div>
 
           <div className="hud">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              <div className="score-panel" style={{ background: isCrystalPalace ? 'rgba(255,255,255,0.8)' : undefined, color: isCrystalPalace ? '#000' : undefined }}>
-                <Map size={24} color={isCrystalPalace ? "#f1c40f" : "#f1c40f"} />
-                <span>{isCrystalPalace ? 'Crystal Palace' : `Level ${currentLevel}`}</span>
-              </div>
-              <div className="score-panel" style={{ background: isCrystalPalace ? 'rgba(255,255,255,0.8)' : undefined, color: isCrystalPalace ? '#000' : undefined }}>
-                <Gem size={24} color="#00e5ff" />
-                <span>{score} / Total: {totalTreasures}</span>
+            {/* Left side status bars */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              <Timer />
+              <StatusBar value={hp} max={100} color="#e74c3c" icon="❤️" label={t.health} />
+              <StatusBar value={age} max={100} color="#f1c40f" icon="✨" label={t.lifeForce} />
+              <div style={{ background: 'rgba(0,0,0,0.6)', borderRadius: '10px', padding: '0.4rem 0.7rem', backdropFilter: 'blur(6px)' }}>
+                <div style={{ color: '#aaa', fontSize: '0.6rem' }}>💎 {t.collected}</div>
+                <div style={{ color: '#00e5ff', fontWeight: 'bold', fontSize: '0.9rem' }}>{score} / {totalTreasures}</div>
               </div>
             </div>
-            
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end' }}>
-              <div className="score-panel" style={{ color: health > 30 ? '#2ecc71' : '#e74c3c' }}>
-                <Heart size={24} fill={health > 30 ? '#2ecc71' : '#e74c3c'} />
-                <span>{health}%</span>
-              </div>
-              {!isCrystalPalace && (
-                <div className="score-panel" style={{ color: timeRemaining > 60 ? '#f1c40f' : '#e74c3c' }}>
-                  <Clock size={24} />
-                  <span>Usia: {formatTime(timeRemaining)}</span>
-                </div>
-              )}
+            {/* Right side */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', alignItems: 'flex-end' }}>
               {network.connections.length > 0 && (
-                <div className="score-panel" style={{ color: '#9b59b6' }}>
-                  <Users size={24} />
-                  <span>{network.connections.length} Teman</span>
+                <div style={{ background: 'rgba(0,0,0,0.6)', borderRadius: '10px', padding: '0.4rem 0.7rem', color: '#2ecc71', fontSize: '0.8rem', display: 'flex', gap: '4px', alignItems: 'center' }}>
+                  <Users size={14} />{network.connections.length} {t.friends}
                 </div>
               )}
+              <div style={{ background: isCrystalPalace ? 'rgba(255,215,0,0.2)' : 'rgba(0,0,0,0.6)', borderRadius: '10px', padding: '0.4rem 0.7rem', color: isCrystalPalace ? '#f1c40f' : '#00e5ff', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                {isCrystalPalace ? '🏰 Crystal Palace' : `📍 Level ${currentLevel}`}
+              </div>
               <Minimap />
             </div>
           </div>
           <div className="joystick-zone interactive">
-            <Joystick 
-              size={100} 
-              baseColor="rgba(255, 255, 255, 0.2)" 
-              stickColor={isCrystalPalace ? "rgba(255, 215, 0, 0.8)" : "rgba(206, 147, 216, 0.8)"} 
-              move={handleJoystickMove} 
-              stop={handleJoystickStop} 
-            />
+            <Joystick size={100}
+              baseColor="rgba(255,255,255,0.15)"
+              stickColor={isCrystalPalace ? "rgba(255,215,0,0.8)" : "rgba(206,147,216,0.8)"}
+              move={(e) => setJoystickInput(e.x || 0, e.y || 0)}
+              stop={() => setJoystickInput(0, 0)} />
           </div>
+          {showPause && <PauseMenu onClose={() => setShowPause(false)} />}
         </>
+      )}
+
+      {/* ── VICTORY (level complete or final) ── */}
+      {gameState === 'victory' && (
+        <div className="menu-overlay interactive" style={{ background: isCrystalPalace ? 'rgba(255,255,255,0.9)' : undefined, maxWidth: '500px' }}>
+          {isCrystalPalace ? (
+            <>
+              <div style={{ fontSize: '4rem' }}>🏆</div>
+              <h1 style={{ color: '#f1c40f', fontSize: '1.6rem', textShadow: '0 0 20px #f1c40f', textAlign: 'center' }}>
+                {t.finalVictory}
+              </h1>
+              <p style={{ color: '#555', textAlign: 'center', fontSize: '0.95rem', lineHeight: 1.6 }}>{t.finalSubtitle}</p>
+              <button className="btn-start" style={{ background: 'linear-gradient(45deg, #f1c40f, #e67e22)' }}
+                onClick={() => { audio.grandVictory(); setLevel(1); resetGame(); }}>
+                🌟 {t.startFresh}
+              </button>
+            </>
+          ) : (
+            <>
+              <div style={{ fontSize: '3rem' }}>🚪</div>
+              <h1 className="title" style={{ color: '#00e5ff' }}>{t.levelComplete}</h1>
+              <p style={{ color: '#aaa', fontSize: '1rem' }}>💎 {score} {t.collected}</p>
+              <button className="btn-start" onClick={() => { audio.levelComplete(); setGameState('playing'); }}>
+                {t.nextLevel} →
+              </button>
+              <button onClick={() => { audio.buttonClick(); setGameState('menu'); }}
+                style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)', color: '#aaa', padding: '0.5rem 1.5rem', borderRadius: '20px', cursor: 'pointer', marginTop: '0.5rem' }}>
+                <Home size={14} style={{ marginRight: '4px' }} />{t.returnMenu}
+              </button>
+            </>
+          )}
+        </div>
       )}
     </div>
   );

@@ -44,7 +44,11 @@ class NetworkManager {
   setupConnection = (conn: DataConnection) => {
     conn.on('data', (data: any) => {
       if (data.type === 'position') {
-        useGameStore.getState().setOtherPlayerPosition(data.peerId, data.position, data.rotation, data.playerName, data.skinColor, data.shirtColor, data.isDead);
+        useGameStore.getState().setOtherPlayerPosition(
+          data.peerId, data.position, data.rotation,
+          data.name || 'Teman',
+          data.avatar || { skinColor: '#f5cba7', shirtColor: '#2980b9', pantsColor: '#2c3e50', accessory: 'none' }
+        );
       }
     });
 
@@ -55,16 +59,11 @@ class NetworkManager {
   };
 
   broadcastPosition = (pos: [number, number, number], rot: number) => {
-    const state = useGameStore.getState();
     const data = {
       type: 'position',
       peerId: this.peer?.id,
       position: pos,
-      rotation: rot,
-      playerName: state.playerName,
-      skinColor: state.skinColor,
-      shirtColor: state.shirtColor,
-      isDead: state.isDead
+      rotation: rot
     };
     this.connections.forEach(conn => {
       if (conn.open) {

@@ -5,7 +5,6 @@ export interface MazeResult {
   exitX: number;
   exitZ: number;
   treasures: { x: number; z: number }[];
-  enemies: { x: number; z: number; type: 'pocong' | 'kuntilanak' | 'animalHead' }[];
 }
 
 export function generateMaze(level: number): MazeResult {
@@ -82,35 +81,12 @@ export function generateMaze(level: number): MazeResult {
     }
   }
 
-  // Place enemies
-  const enemies: { x: number; z: number; type: 'pocong' | 'kuntilanak' | 'animalHead' }[] = [];
-  const enemyCount = Math.floor(level / 5) + 1; // 1 enemy at lvl 1, 25 enemies at lvl 120
-  const enemyTypes: ('pocong' | 'kuntilanak' | 'animalHead')[] = ['pocong', 'kuntilanak', 'animalHead'];
-
-  attempts = 0;
-  while (enemies.length < enemyCount && attempts < 1000) {
-    attempts++;
-    const ex = Math.floor(Math.random() * (width - 2)) + 1;
-    const ez = Math.floor(Math.random() * (height - 2)) + 1;
-    
-    if (maze[ez][ex] === 0 && 
-       !(ex === startX && ez === startZ) && 
-       !(ex === exitX && ez === exitZ) &&
-       !treasures.some(t => t.x === ex && t.z === ez) &&
-       !enemies.some(e => e.x === ex && e.z === ez)) {
-      
-      const type = enemyTypes[Math.floor(Math.random() * enemyTypes.length)];
-      enemies.push({ x: ex, z: ez, type });
-    }
-  }
-
   return {
     data: maze,
     startX,
     startZ,
     exitX,
     exitZ,
-    treasures,
-    enemies
+    treasures
   };
 }
