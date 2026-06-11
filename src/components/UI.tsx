@@ -170,6 +170,8 @@ export const UI: React.FC = () => {
 
   const [roomIdInput, setRoomIdInput] = useState('');
   const [connectionStatus, setConnectionStatus] = useState('');
+  const [connectionError, setConnectionError] = useState('');
+  const [isConnecting, setIsConnecting] = useState(false);
   const [myRoomId, setMyRoomId] = useState('');
   const [showPause, setShowPause] = useState(false);
 
@@ -186,23 +188,44 @@ export const UI: React.FC = () => {
 
   const createRoom = async () => {
     audio.buttonClick();
-    setConnectionStatus(t.connecting);
+    setIsConnecting(true);
+    setConnectionError('');
+    setConnectionStatus('⏳ Membuat ruangan...');
     try {
       const id = await network.initHost();
       setMyRoomId(id);
-      setConnectionStatus(`${t.createRoom}: ${id}`);
-    } catch (e: any) { setConnectionStatus(t.failConnect + e.message); }
+      setConnectionStatus('');
+    } catch (e: any) {
+      setConnectionError(e.message || 'Gagal membuat ruangan. Coba lagi.');
+      setConnectionStatus('');
+    } finally {
+      setIsConnecting(false);
+    }
   };
 
   const joinRoom = async () => {
-    if (!roomIdInput) return;
+    if (!roomIdInput.trim() || isConnecting) return;
     audio.buttonClick();
-    setConnectionStatus(t.connecting);
+    setIsConnecting(true);
+    setConnectionError('');
+    setConnectionStatus('⏳ Menghubungkan ke ruangan...');
     try {
       await network.joinRoom(roomIdInput);
-      setConnectionStatus(t.connected);
-      setGameState('playing');
-    } catch (e: any) { setConnectionStatus(t.failConnect + e.message); }
+      setConnectionStatus('✅ Berhasil terhubung!');
+      setTimeout(() => setGameState('playing'), 800);
+    } catch (e: any) {
+      setConnectionError(e.message || 'Gagal terhubung. Pastikan kode ruangan benar dan host masih online.');
+      setConnectionStatus('');
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const copyRoomId = () => {
+    if (myRoomId) {
+      navigator.clipboard.writeText(myRoomId).catch(() => {});
+      audio.buttonClick();
+    }
   };
 
   const NavBtn: React.FC<{ icon: React.ReactNode; label: string; onClick: () => void; color?: string }> = ({ icon, label, onClick, color = '#00e5ff' }) => (
@@ -233,16 +256,34 @@ export const UI: React.FC = () => {
           {currentLevel > 1 && <p style={{ color: '#00e5ff', fontSize: '1rem' }}>👤 {playerName} — Level {currentLevel}</p>}
 
           {myRoomId ? (
-            <div style={{ background: 'rgba(0,0,0,0.5)', padding: '1rem', borderRadius: '10px', textAlign: 'center' }}>
-              <p style={{ color: '#00e5ff', fontSize: '1rem' }}>{t.createRoom}:</p>
-              <h2 style={{ color: '#fff', letterSpacing: '4px', userSelect: 'all', fontFamily: 'monospace' }}>{myRoomId}</h2>
-              <p style={{ color: '#aaa', fontSize: '0.8rem' }}>{t.waitingFriend}</p>
-              <button className="btn-start" onClick={() => { audio.buttonClick(); setGameState('playing'); }} style={{ marginTop: '0.75rem' }}>
+            <div style={{ background: 'rgba(0,0,0,0.6)', padding: '1.25rem', borderRadius: '14px', textAlign: 'center', border: '1px solid rgba(0,229,255,0.2)', width: '100%', maxWidth: '380px' }}>
+              <p style={{ color: '#aaa', fontSize: '0.8rem', marginBottom: '0.5rem' }}>📡 Kode Ruangan Anda:</p>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                <h2 style={{ color: '#00e5ff', letterSpacing: '3px', fontFamily: 'monospace', fontSize: '1.1rem', userSelect: 'all', wordBreak: 'break-all' }}>
+                  {myRoomId}
+                </h2>
+                <button
+                  onClick={copyRoomId}
+                  title="Salin kode"
+                  style={{ background: 'rgba(0,229,255,0.15)', border: '1px solid rgba(0,229,255,0.3)', borderRadius: '8px', color: '#00e5ff', cursor: 'pointer', padding: '4px 8px', fontSize: '1rem' }}>
+                  📋
+                </button>
+              </div>
+              <p style={{ color: '#aaa', fontSize: '0.75rem', marginTop: '0.5rem', marginBottom: '1rem' }}>
+                {t.waitingFriend} Bagikan kode ini ke teman Anda.
+              </p>
+              <button className="btn-start" onClick={() => { audio.buttonClick(); setGameState('playing'); }} style={{ fontSize: '1rem', padding: '0.7rem 2rem' }}>
                 {t.startPlay}
+              </button>
+              <button
+                onClick={() => { setMyRoomId(''); network.disconnect(); }}
+                style={{ display: 'block', margin: '0.6rem auto 0', background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: '0.8rem' }}>
+                ✕ Batalkan
               </button>
             </div>
           ) : (
             <>
+              {/* Play buttons */}
               <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
                 {currentLevel > 1 && (
                   <button className="btn-start" onClick={() => { audio.buttonClick(); setGameState('playing'); }}>
@@ -254,22 +295,61 @@ export const UI: React.FC = () => {
                   🆕 {t.newGame}
                 </button>
               </div>
-              <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-                <button className="btn-start" style={{ background: 'linear-gradient(45deg, #2980b9, #1a5276)', fontSize: '0.9rem', padding: '0.5rem 1.2rem' }} onClick={createRoom}>
-                  🔗 {t.createRoom}
-                </button>
+
+              {/* Multiplayer section */}
+              <div style={{ width: '100%', maxWidth: '380px', background: 'rgba(0,0,0,0.4)', borderRadius: '12px', padding: '1rem', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <p style={{ color: '#aaa', fontSize: '0.75rem', textAlign: 'center', marginBottom: '0.75rem' }}>👥 Multiplayer</p>
+                <div style={{ display: 'flex', gap: '0.6rem', marginBottom: '0.6rem' }}>
+                  <button
+                    className="btn-start"
+                    disabled={isConnecting}
+                    style={{ background: 'linear-gradient(45deg, #2980b9, #1a5276)', fontSize: '0.85rem', padding: '0.5rem 1rem', flex: 1, opacity: isConnecting ? 0.6 : 1 }}
+                    onClick={createRoom}>
+                    🔗 {t.createRoom}
+                  </button>
+                </div>
                 <div style={{ display: 'flex', gap: '0.4rem' }}>
-                  <input type="text" placeholder={t.joinPlaceholder} value={roomIdInput}
+                  <input
+                    type="text"
+                    placeholder={t.joinPlaceholder}
+                    value={roomIdInput}
                     onChange={e => setRoomIdInput(e.target.value)}
-                    style={{ padding: '0.5rem', borderRadius: '8px', border: '1px solid #00e5ff60', background: 'rgba(0,0,0,0.5)', color: 'white', width: '130px', fontSize: '0.85rem' }} />
-                  <button className="btn-start" style={{ background: 'linear-gradient(45deg, #27ae60, #1e8449)', fontSize: '0.85rem', padding: '0.5rem 1rem' }} onClick={joinRoom}>
-                    {t.joinRoom}
+                    onKeyDown={e => e.key === 'Enter' && joinRoom()}
+                    disabled={isConnecting}
+                    style={{
+                      padding: '0.5rem 0.75rem', borderRadius: '8px',
+                      border: '1px solid rgba(0,229,255,0.4)',
+                      background: 'rgba(0,0,0,0.5)', color: 'white',
+                      flex: 1, fontSize: '0.85rem', fontFamily: 'monospace',
+                      outline: 'none',
+                    }}
+                  />
+                  <button
+                    className="btn-start"
+                    disabled={isConnecting || !roomIdInput.trim()}
+                    style={{ background: 'linear-gradient(45deg, #27ae60, #1e8449)', fontSize: '0.85rem', padding: '0.5rem 1rem', opacity: (isConnecting || !roomIdInput.trim()) ? 0.6 : 1 }}
+                    onClick={joinRoom}>
+                    {isConnecting ? '⏳' : t.joinRoom}
                   </button>
                 </div>
               </div>
+
+              {/* Status / Error messages */}
+              {connectionStatus && (
+                <p style={{ color: '#f1c40f', fontSize: '0.85rem', textAlign: 'center' }}>{connectionStatus}</p>
+              )}
+              {connectionError && (
+                <div style={{ background: 'rgba(231,76,60,0.15)', border: '1px solid rgba(231,76,60,0.4)', borderRadius: '10px', padding: '0.75rem 1rem', maxWidth: '380px', textAlign: 'center' }}>
+                  <p style={{ color: '#e74c3c', fontSize: '0.85rem', marginBottom: '0.5rem' }}>⚠️ {connectionError}</p>
+                  <button
+                    onClick={() => { setConnectionError(''); setRoomIdInput(''); }}
+                    style={{ background: 'rgba(231,76,60,0.2)', border: '1px solid rgba(231,76,60,0.4)', color: '#e74c3c', borderRadius: '20px', padding: '0.3rem 1rem', cursor: 'pointer', fontSize: '0.8rem' }}>
+                    🔄 Coba Lagi
+                  </button>
+                </div>
+              )}
             </>
           )}
-          {connectionStatus && <p style={{ color: '#f1c40f', fontSize: '0.85rem' }}>{connectionStatus}</p>}
 
           <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem', flexWrap: 'wrap', justifyContent: 'center' }}>
             <NavBtn icon={<Map size={18} />} label={t.levelMap} onClick={() => { audio.buttonClick(); setGameState('levelmap'); }} color="#00e5ff" />
