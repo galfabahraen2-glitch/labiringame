@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody, RapierRigidBody, CapsuleCollider } from '@react-three/rapier';
 import { Html } from '@react-three/drei';
@@ -159,6 +159,42 @@ export const BlockyCharacter: React.FC<{
   );
 };
 
+// ─── Keyboard Hook ─────────────────────────────────────────────────────────
+function useKeyboardControls() {
+  const [keys, setKeys] = useState({ forward: false, backward: false, left: false, right: false, lookLeft: false, lookRight: false });
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      switch (e.code) {
+        case 'KeyW': case 'ArrowUp': setKeys(k => ({ ...k, forward: true })); break;
+        case 'KeyS': case 'ArrowDown': setKeys(k => ({ ...k, backward: true })); break;
+        case 'KeyA': setKeys(k => ({ ...k, left: true })); break;
+        case 'KeyD': setKeys(k => ({ ...k, right: true })); break;
+        case 'ArrowLeft': setKeys(k => ({ ...k, lookLeft: true })); break;
+        case 'ArrowRight': setKeys(k => ({ ...k, lookRight: true })); break;
+      }
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      switch (e.code) {
+        case 'KeyW': case 'ArrowUp': setKeys(k => ({ ...k, forward: false })); break;
+        case 'KeyS': case 'ArrowDown': setKeys(k => ({ ...k, backward: false })); break;
+        case 'KeyA': setKeys(k => ({ ...k, left: false })); break;
+        case 'KeyD': setKeys(k => ({ ...k, right: false })); break;
+        case 'ArrowLeft': setKeys(k => ({ ...k, lookLeft: false })); break;
+        case 'ArrowRight': setKeys(k => ({ ...k, lookRight: false })); break;
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
+
+  return keys;
+}
+
 // ─── The main Player component ─────────────────────────────────────────────
 interface PlayerProps {
   startPos?: [number, number] | null;
@@ -170,6 +206,7 @@ export const Player: React.FC<PlayerProps> = ({ startPos }) => {
   const animPhase = useRef(0);
 
   const { joystickInput, joystickLookInput, joystickMode, cameraView, gameState, isDead, setPlayerPosition, setPlayerWorldPos, playerName, avatarConfig, tickTime } = useGameStore();
+  const keys = useKeyboardControls();
 
   useFrame((state, delta) => {
     if (!body.current || gameState !== 'playing' || isDead) return;
@@ -178,7 +215,31 @@ export const Player: React.FC<PlayerProps> = ({ startPos }) => {
     tickTime(delta);
 
     const velocity = body.current.linvel();
-    const { x: jx, y: jy } = joystickInput;
+    let { x: jx, y: jy } = joystickInput;
+    let lx = joystickLookInput.x;
+
+    // Apply keyboard overrides
+    if (keys.forward) jy = 1;
+    if (keys.backward) jy = -1;
+    
+    if (joystickMode === 'single') {
+      if (keys.left || keys.lookLeft) jx = -1;
+      if (keys.right || keys.lookRight) jx = 1;
+    } else {
+      if (keys.left) jx = -1;
+      if (keys.right) jx = 1;
+      if (keys.lookLeft) lx = -1;
+      if (keys.lookRight) lx = 1;
+    }
+
+    // Normalize diagonal movement if using keyboard
+    if ((keys.forward || keys.backward) && (keys.left || keys.right || keys.lookLeft || keys.lookRight)) {
+      const len = Math.sqrt(jx * jx + jy * jy);
+      if (len > 0) {
+        jx /= len;
+        jy /= len;
+      }
+    }
 
     let moveX = 0;
     let moveZ = 0;
@@ -202,7 +263,7 @@ export const Player: React.FC<PlayerProps> = ({ startPos }) => {
         rotSpeed = -jx * 3.5 * delta;
         fwd = jy * SPEED;
       } else {
-        rotSpeed = -joystickLookInput.x * 3.5 * delta;
+        rotSpeed = -lx * 3.5 * delta;
         fwd = jy * SPEED;
         strafe = jx * SPEED;
       }
