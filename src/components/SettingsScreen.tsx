@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useGameStore, type AvatarConfig } from '../store';
+import { useGameStore, type AvatarConfig, type CameraView, type JoystickMode } from '../store';
 import { audio } from '../audioManager';
 
 const SKIN_COLORS = ['#f5cba7','#d4a574','#c68642','#8d5524','#fde3a7','#4e2c0e'];
@@ -23,6 +23,14 @@ const T = {
     language: 'Bahasa',
     save: 'Simpan & Kembali',
     namePlaceholder: 'Masukkan nama Anda...',
+    cameraOptions: 'Sudut Pandang Kamera',
+    camIso: 'Isometric (Atas Miring)',
+    camThird: 'Third-Person (Dari Belakang)',
+    camFirst: 'First-Person (Dari Mata)',
+    joystickOptions: 'Sistem Kontrol',
+    joySingle: '1 Joystick (Tengah, Multifungsi)',
+    joyDual: '2 Joystick (Kiri: Gerak, Kanan: Arah)',
+    fullscreen: 'Layar Penuh (Otomatis Landscape)',
   },
   en: {
     settings: 'Settings',
@@ -38,16 +46,47 @@ const T = {
     language: 'Language',
     save: 'Save & Back',
     namePlaceholder: 'Enter your name...',
+    cameraOptions: 'Camera View',
+    camIso: 'Isometric (Top-Down)',
+    camThird: 'Third-Person (Behind)',
+    camFirst: 'First-Person (Eyes)',
+    joystickOptions: 'Controls',
+    joySingle: '1 Joystick (Center, Multi-function)',
+    joyDual: '2 Joysticks (Left: Move, Right: Look)',
+    fullscreen: 'Force Fullscreen (Landscape)',
   }
 };
 
 export const SettingsScreen: React.FC = () => {
-  const { playerName, avatarConfig, language, musicVolume, sfxVolume,
-    setPlayerName, setAvatarConfig, setLanguage, setMusicVolume, setSfxVolume,
+  const { playerName, avatarConfig, language, musicVolume, sfxVolume, cameraView, joystickMode,
+    setPlayerName, setAvatarConfig, setLanguage, setMusicVolume, setSfxVolume, setCameraView, setJoystickMode,
     setGameState } = useGameStore();
 
   const [nameInput, setNameInput] = useState(playerName);
   const t = T[language];
+
+  const handleFullscreen = () => {
+    audio.buttonClick();
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => {
+        console.warn(`Error attempting to enable fullscreen: ${err.message}`);
+      });
+      // Try to lock orientation if supported
+      try {
+        if (screen.orientation && (screen.orientation as any).lock) {
+          (screen.orientation as any).lock('landscape').catch(() => {});
+        }
+      } catch (e) {}
+    } else {
+      document.exitFullscreen().catch(() => {});
+      try {
+        if (screen.orientation && screen.orientation.unlock) {
+          screen.orientation.unlock();
+        }
+      } catch (e) {}
+    }
+  };
+
 
   const handleSave = () => {
     audio.buttonClick();
@@ -159,6 +198,62 @@ export const SettingsScreen: React.FC = () => {
                 </button>
               ))}
             </div>
+          </div>
+        </Section>
+
+        {/* Gameplay & Controls */}
+        <Section title={`🎮 ${t.cameraOptions} & Kontrol`}>
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ color: '#aaa', fontSize: '0.85rem', display: 'block', marginBottom: '0.6rem' }}>{t.cameraOptions}</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              {(['isometric', 'third-person', 'first-person'] as CameraView[]).map(view => (
+                <button
+                  key={view}
+                  onClick={() => { audio.buttonClick(); setCameraView(view); }}
+                  style={{
+                    padding: '0.6rem 1rem', borderRadius: '8px', textAlign: 'left',
+                    border: cameraView === view ? '2px solid #00e5ff' : '1px solid rgba(255,255,255,0.1)',
+                    background: cameraView === view ? 'rgba(0,229,255,0.1)' : 'rgba(0,0,0,0.4)',
+                    color: cameraView === view ? '#00e5ff' : '#aaa', cursor: 'pointer',
+                  }}
+                >
+                  {view === 'isometric' ? `🎥 ${t.camIso}` : view === 'third-person' ? `🧍‍♂️ ${t.camThird}` : `👁️ ${t.camFirst}`}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ color: '#aaa', fontSize: '0.85rem', display: 'block', marginBottom: '0.6rem' }}>{t.joystickOptions}</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              {(['single', 'dual'] as JoystickMode[]).map(mode => (
+                <button
+                  key={mode}
+                  onClick={() => { audio.buttonClick(); setJoystickMode(mode); }}
+                  style={{
+                    padding: '0.6rem 1rem', borderRadius: '8px', textAlign: 'left',
+                    border: joystickMode === mode ? '2px solid #2ecc71' : '1px solid rgba(255,255,255,0.1)',
+                    background: joystickMode === mode ? 'rgba(46,204,113,0.1)' : 'rgba(0,0,0,0.4)',
+                    color: joystickMode === mode ? '#2ecc71' : '#aaa', cursor: 'pointer',
+                  }}
+                >
+                  {mode === 'single' ? `🕹️ ${t.joySingle}` : `🕹️🕹️ ${t.joyDual}`}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <button
+              onClick={handleFullscreen}
+              style={{
+                width: '100%', padding: '0.8rem', borderRadius: '8px',
+                border: '1px solid #f39c12', background: 'rgba(243,156,18,0.1)',
+                color: '#f39c12', cursor: 'pointer', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+              }}
+            >
+              📱 {t.fullscreen}
+            </button>
           </div>
         </Section>
 

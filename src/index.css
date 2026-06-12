@@ -161,7 +161,7 @@ canvas {
   z-index: 20;
 }
 
-/* ─── Joystick Zone ───────────────────────────────── */
+/* ─── Joystick Zones ──────────────────────────────── */
 .joystick-zone {
   position: fixed;
   bottom: max(2rem, env(safe-area-inset-bottom, 2rem));
@@ -169,6 +169,47 @@ canvas {
   z-index: 30;
   pointer-events: auto;
   -webkit-tap-highlight-color: transparent;
+}
+
+.joystick-zone-right {
+  position: fixed;
+  bottom: max(2rem, env(safe-area-inset-bottom, 2rem));
+  right: max(2rem, env(safe-area-inset-right, 2rem));
+  z-index: 30;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.joystick-zone-center {
+  position: fixed;
+  bottom: max(2rem, env(safe-area-inset-bottom, 2rem));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* On Portrait, joysticks move to bottom left/right but closer, or center */
+@media (orientation: portrait) {
+  .joystick-zone {
+    left: 10%;
+  }
+  .joystick-zone-right {
+    right: 10%;
+  }
+}
+
+/* ─── HUD Top Buttons ─────────────────────────────── */
+.hud-buttons {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top, 12px));
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 10px;
+  z-index: 100;
+  pointer-events: auto; /* MUST BE AUTO to be clickable inside UI container */
 }
 
 /* ─── Score Panel (legacy, kept for compatibility) ── */

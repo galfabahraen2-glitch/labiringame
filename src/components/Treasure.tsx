@@ -12,14 +12,14 @@ interface TreasureProps {
 }
 
 export const Treasure: React.FC<TreasureProps> = ({ position }) => {
-  const meshRef = useRef<THREE.Mesh>(null);
+  const meshRef = useRef<THREE.Group>(null);
   const [collected, setCollected] = useState(false);
-  const addScore = useGameStore(state => state.addScore);
+  const collectTreasure = useGameStore(state => state.collectTreasure);
 
-  useFrame((state) => {
+  useFrame((state, delta) => {
     if (meshRef.current && !collected) {
-      meshRef.current.rotation.y += 0.05;
-      meshRef.current.position.y = position[1] + Math.sin(state.clock.elapsedTime * 2) * 0.2;
+      meshRef.current.rotation.y += delta;
+      meshRef.current.position.y = position[1] + Math.sin(state.clock.elapsedTime * 2) * 0.15;
     }
   });
 
@@ -28,16 +28,29 @@ export const Treasure: React.FC<TreasureProps> = ({ position }) => {
   return (
     <RigidBody type="fixed" colliders={false} sensor onIntersectionEnter={() => {
       setCollected(true);
-      addScore(1);
+      collectTreasure();
       audio.collectTreasure();
     }}>
-      <CuboidCollider args={[0.5, 0.5, 0.5]} position={position} />
-      <mesh ref={meshRef} position={position} castShadow>
-        <octahedronGeometry args={[0.4, 0]} />
-        <meshStandardMaterial color="#00e5ff" emissive="#0088ff" emissiveIntensity={1} wireframe={false} />
-      </mesh>
-      <pointLight position={position} color="#00e5ff" distance={3} intensity={2} />
-      <Sparkles position={position} count={20} scale={1.5} size={2} speed={1} color="#00e5ff" />
+      <CuboidCollider args={[0.6, 0.6, 0.6]} position={position} />
+      <group ref={meshRef} position={position}>
+        {/* Chest Base */}
+        <mesh position={[0, -0.2, 0]} castShadow>
+          <boxGeometry args={[0.7, 0.4, 0.5]} />
+          <meshStandardMaterial color="#8B4513" roughness={0.9} />
+        </mesh>
+        {/* Chest Lid (Open) */}
+        <mesh position={[0, 0.1, -0.25]} rotation={[-0.5, 0, 0]} castShadow>
+          <boxGeometry args={[0.7, 0.1, 0.5]} />
+          <meshStandardMaterial color="#A0522D" roughness={0.9} />
+        </mesh>
+        {/* Emerald Crystal */}
+        <mesh position={[0, 0.1, 0]} castShadow>
+          <octahedronGeometry args={[0.25, 0]} />
+          <meshStandardMaterial color="#2ecc71" emissive="#27ae60" emissiveIntensity={0.8} />
+        </mesh>
+      </group>
+      <pointLight position={[position[0], position[1] + 0.5, position[2]]} color="#2ecc71" distance={4} intensity={2} />
+      <Sparkles position={position} count={25} scale={1.5} size={3} speed={1} color="#2ecc71" />
     </RigidBody>
   );
 };

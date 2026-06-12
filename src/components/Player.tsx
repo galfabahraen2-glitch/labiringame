@@ -169,7 +169,7 @@ export const Player: React.FC<PlayerProps> = ({ startPos }) => {
   const characterGroup = useRef<THREE.Group>(null);
   const animPhase = useRef(0);
 
-  const { joystickInput, gameState, isDead, setPlayerPosition, setPlayerWorldPos, playerName, avatarConfig, tickTime } = useGameStore();
+  const { joystickInput, joystickLookInput, joystickMode, cameraView, gameState, isDead, setPlayerPosition, setPlayerWorldPos, playerName, avatarConfig, tickTime } = useGameStore();
 
   useFrame((state, delta) => {
     if (!body.current || gameState !== 'playing' || isDead) return;
@@ -180,9 +180,42 @@ export const Player: React.FC<PlayerProps> = ({ startPos }) => {
     const velocity = body.current.linvel();
     const { x: jx, y: jy } = joystickInput;
 
-    const moveX = jx * SPEED;
-    const moveZ = -jy * SPEED;
-    const length = Math.sqrt(moveX * moveX + moveZ * moveZ);
+    let moveX = 0;
+    let moveZ = 0;
+    let targetRotY = characterGroup.current ? characterGroup.current.rotation.y : 0;
+    let length = 0;
+
+    if (cameraView === 'isometric') {
+      moveX = jx * SPEED;
+      moveZ = -jy * SPEED;
+      length = Math.sqrt(moveX * moveX + moveZ * moveZ);
+      if (length > 0.1 && characterGroup.current) {
+        targetRotY = Math.atan2(moveX, moveZ);
+        characterGroup.current.rotation.y = targetRotY;
+      }
+    } else {
+      let rotSpeed = 0;
+      let fwd = 0;
+      let strafe = 0;
+      
+      if (joystickMode === 'single') {
+        rotSpeed = -jx * 3.5 * delta;
+        fwd = jy * SPEED;
+      } else {
+        rotSpeed = -joystickLookInput.x * 3.5 * delta;
+        fwd = jy * SPEED;
+        strafe = jx * SPEED;
+      }
+      
+      targetRotY += rotSpeed;
+      if (characterGroup.current) {
+        characterGroup.current.rotation.y = targetRotY;
+      }
+      
+      moveX = Math.sin(targetRotY) * fwd - Math.cos(targetRotY) * strafe;
+      moveZ = Math.cos(targetRotY) * fwd + Math.sin(targetRotY) * strafe;
+      length = Math.sqrt(fwd * fwd + strafe * strafe);
+    }
 
     body.current.setLinvel({ x: moveX, y: velocity.y, z: moveZ }, true);
 
@@ -190,23 +223,45 @@ export const Player: React.FC<PlayerProps> = ({ startPos }) => {
     setPlayerWorldPos([playerPos.x, playerPos.y, playerPos.z]);
     setPlayerPosition([playerPos.x, playerPos.z]);
 
-    let currentAngle = characterGroup.current ? characterGroup.current.rotation.y : 0;
-    if (length > 0.1 && characterGroup.current) {
-      currentAngle = Math.atan2(moveX, moveZ);
-      characterGroup.current.rotation.y = currentAngle;
-    }
-
     // Animate limbs
     if (length > 0.1) {
       animPhase.current += delta * length * 2;
     }
 
-    network.broadcastPosition([playerPos.x, playerPos.y, playerPos.z], currentAngle);
+    network.broadcastPosition([playerPos.x, playerPos.y, playerPos.z], targetRotY);
 
     // Camera follow
-    const cameraPos = new THREE.Vector3(playerPos.x, playerPos.y + 5, playerPos.z + 6);
-    state.camera.position.lerp(cameraPos, 0.1);
-    state.camera.lookAt(playerPos.x, playerPos.y + 1, playerPos.z);
+    if (cameraView === 'first-person') {
+      if (characterGroup.current && characterGroup.current.children[1]) {
+        characterGroup.current.children[1].visible = false; // Hide head
+      }
+      const cameraPos = new THREE.Vector3(playerPos.x, playerPos.y + 1.2, playerPos.z);
+      state.camera.position.lerp(cameraPos, 0.2);
+      const lookAtPos = new THREE.Vector3(
+        playerPos.x + Math.sin(targetRotY) * 5,
+        playerPos.y + 1.2,
+        playerPos.z + Math.cos(targetRotY) * 5
+      );
+      state.camera.lookAt(lookAtPos);
+    } else {
+      if (characterGroup.current && characterGroup.current.children[1]) {
+        characterGroup.current.children[1].visible = true; // Show head
+      }
+      if (cameraView === 'third-person') {
+        const cameraPos = new THREE.Vector3(
+          playerPos.x - Math.sin(targetRotY) * 4,
+          playerPos.y + 3,
+          playerPos.z - Math.cos(targetRotY) * 4
+        );
+        state.camera.position.lerp(cameraPos, 0.1);
+        state.camera.lookAt(playerPos.x, playerPos.y + 1, playerPos.z);
+      } else {
+        // isometric
+        const cameraPos = new THREE.Vector3(playerPos.x, playerPos.y + 5, playerPos.z + 6);
+        state.camera.position.lerp(cameraPos, 0.1);
+        state.camera.lookAt(playerPos.x, playerPos.y + 1, playerPos.z);
+      }
+    }
   });
 
   const initialX = startPos ? startPos[0] : 0;

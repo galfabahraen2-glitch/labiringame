@@ -165,8 +165,8 @@ const btnStyle = (color: string) => ({
 
 // ─── Main UI ────────────────────────────────────────────────────────────────
 export const UI: React.FC = () => {
-  const { gameState, score, totalTreasures, currentLevel, hp, age, language,
-    setGameState, setLevel, setJoystickInput, resetGame, playerName } = useGameStore();
+  const { gameState, score, totalTreasures, currentLevel, hp, age, language, joystickMode,
+    setGameState, setLevel, setJoystickInput, setJoystickLookInput, resetGame, playerName } = useGameStore();
 
   const [roomIdInput, setRoomIdInput] = useState('');
   const [connectionStatus, setConnectionStatus] = useState('');
@@ -363,10 +363,7 @@ export const UI: React.FC = () => {
       {gameState === 'playing' && (
         <>
           {/* ── TOP CENTER: Always-visible HOME & PAUSE buttons ── */}
-          <div style={{
-            position: 'fixed', top: '12px', left: '50%', transform: 'translateX(-50%)',
-            display: 'flex', gap: '10px', zIndex: 100,
-          }}>
+          <div className="hud-buttons">
             <button
               onClick={() => { audio.buttonClick(); setGameState('menu'); }}
               style={{
@@ -428,13 +425,32 @@ export const UI: React.FC = () => {
               <Minimap />
             </div>
           </div>
-          <div className="joystick-zone interactive">
-            <Joystick size={100}
-              baseColor="rgba(255,255,255,0.15)"
-              stickColor={isCrystalPalace ? "rgba(255,215,0,0.8)" : "rgba(206,147,216,0.8)"}
-              move={(e) => setJoystickInput(e.x || 0, e.y || 0)}
-              stop={() => setJoystickInput(0, 0)} />
-          </div>
+          {joystickMode === 'single' ? (
+            <div className="joystick-zone-center interactive">
+              <Joystick size={100}
+                baseColor="rgba(255,255,255,0.15)"
+                stickColor={isCrystalPalace ? "rgba(255,215,0,0.8)" : "rgba(206,147,216,0.8)"}
+                move={(e) => setJoystickInput(e.x || 0, e.y || 0)}
+                stop={() => setJoystickInput(0, 0)} />
+            </div>
+          ) : (
+            <>
+              <div className="joystick-zone interactive">
+                <Joystick size={100}
+                  baseColor="rgba(255,255,255,0.15)"
+                  stickColor={isCrystalPalace ? "rgba(255,215,0,0.8)" : "rgba(206,147,216,0.8)"}
+                  move={(e) => setJoystickInput(e.x || 0, e.y || 0)}
+                  stop={() => setJoystickInput(0, 0)} />
+              </div>
+              <div className="joystick-zone-right interactive">
+                <Joystick size={100}
+                  baseColor="rgba(255,255,255,0.15)"
+                  stickColor="rgba(0,229,255,0.6)"
+                  move={(e) => setJoystickLookInput(e.x || 0, e.y || 0)}
+                  stop={() => setJoystickLookInput(0, 0)} />
+              </div>
+            </>
+          )}
           {showPause && <PauseMenu onClose={() => setShowPause(false)} />}
         </>
       )}

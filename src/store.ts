@@ -3,6 +3,8 @@ import { create } from 'zustand'
 export type GameState = 'menu' | 'levelmap' | 'playing' | 'dead' | 'victory' | 'settings' | 'trackrecord'
 
 export type Language = 'id' | 'en'
+export type CameraView = 'isometric' | 'third-person' | 'first-person'
+export type JoystickMode = 'single' | 'dual'
 
 export interface AvatarConfig {
   skinColor: string
@@ -31,6 +33,7 @@ interface State {
   isDead: boolean
   // Maze data
   joystickInput: { x: number, y: number }
+  joystickLookInput: { x: number, y: number }
   playerPosition: [number, number]
   playerWorldPos: [number, number, number]
   mazeData: number[][] | null
@@ -45,6 +48,8 @@ interface State {
   language: Language
   musicVolume: number
   sfxVolume: number
+  cameraView: CameraView
+  joystickMode: JoystickMode
   // Records
   trackRecord: LevelRecord[]
   // Actions
@@ -55,6 +60,7 @@ interface State {
   setMazeData: (data: number[][], exitPos: [number, number], startPos: [number, number], treasures: {x: number, z: number, id: string}[]) => void
   nextLevel: () => void
   setJoystickInput: (x: number, y: number) => void
+  setJoystickLookInput: (x: number, y: number) => void
   setPlayerPosition: (pos: [number, number]) => void
   setPlayerWorldPos: (pos: [number, number, number]) => void
   setOtherPlayerPosition: (id: string, pos: [number, number, number], rot: number, name: string, avatar: AvatarConfig) => void
@@ -64,10 +70,13 @@ interface State {
   tickTime: (delta: number) => void
   killPlayer: () => void
   revivePlayer: () => void
+  collectTreasure: () => void
   // Settings actions
   setPlayerName: (name: string) => void
   setAvatarConfig: (config: Partial<AvatarConfig>) => void
   setLanguage: (lang: Language) => void
+  setCameraView: (view: CameraView) => void
+  setJoystickMode: (mode: JoystickMode) => void
   setMusicVolume: (vol: number) => void
   setSfxVolume: (vol: number) => void
   addTrackRecord: (record: LevelRecord) => void
@@ -97,7 +106,10 @@ const savedSfxVol = parseFloat(localStorage.getItem('lq_sfx_vol') || '0.8')
 const savedTrack = localStorage.getItem('lq_track')
 const initialTrack: LevelRecord[] = savedTrack ? JSON.parse(savedTrack) : []
 
-function getTimeForLevel(level: number): number {
+const savedCameraView = (localStorage.getItem('lq_camera') || 'isometric') as CameraView
+const savedJoystickMode = (localStorage.getItem('lq_joystick') || 'single') as JoystickMode
+
+export function getTimeForLevel(level: number): number {
   if (level <= 40) return 9 * 60      // Easy: 9 minutes
   if (level <= 80) return 6 * 60      // Medium: 6 minutes
   return 3 * 60                        // Expert: 3 minutes
@@ -113,6 +125,7 @@ export const useGameStore = create<State>((set) => ({
   timeLeft: getTimeForLevel(initialLevel),
   isDead: false,
   joystickInput: { x: 0, y: 0 },
+  joystickLookInput: { x: 0, y: 0 },
   playerPosition: [0, 0],
   playerWorldPos: [0, 0, 0],
   mazeData: null,
@@ -123,6 +136,8 @@ export const useGameStore = create<State>((set) => ({
   playerName: savedName,
   avatarConfig: initialAvatar,
   language: savedLang,
+  cameraView: savedCameraView,
+  joystickMode: savedJoystickMode,
   musicVolume: savedMusicVol,
   sfxVolume: savedSfxVol,
   trackRecord: initialTrack,
@@ -153,6 +168,8 @@ export const useGameStore = create<State>((set) => ({
   }),
   
   setJoystickInput: (x, y) => set({ joystickInput: { x, y } }),
+  setJoystickLookInput: (x, y) => set({ joystickLookInput: { x, y } }),
+
   setPlayerPosition: (pos) => set({ playerPosition: pos }),
   setPlayerWorldPos: (pos) => set({ playerWorldPos: pos }),
   
@@ -190,6 +207,16 @@ export const useGameStore = create<State>((set) => ({
   killPlayer: () => set({ isDead: true, timeLeft: 0 }),
   revivePlayer: () => set((s) => ({ isDead: false, hp: 100, age: 50, timeLeft: getTimeForLevel(s.currentLevel) })),
 
+  collectTreasure: () => set((s) => {
+    const newScore = s.score + 1;
+    localStorage.setItem('lq_score', newScore.toString());
+    return {
+      score: newScore,
+      hp: Math.min(100, s.hp + 10),
+      age: Math.min(100, s.age + 15),
+    };
+  }),
+
   setPlayerName: (name) => {
     localStorage.setItem('lq_name', name);
     set({ playerName: name });
@@ -201,15 +228,25 @@ export const useGameStore = create<State>((set) => ({
     return { avatarConfig: newAvatar };
   }),
   
-  setLanguage: (lang) => {
+  setLanguage: (lang) => set(() => {
     localStorage.setItem('lq_lang', lang);
-    set({ language: lang });
-  },
-  
-  setMusicVolume: (vol) => {
+    return { language: lang };
+  }),
+
+  setCameraView: (view) => set(() => {
+    localStorage.setItem('lq_camera', view);
+    return { cameraView: view };
+  }),
+
+  setJoystickMode: (mode) => set(() => {
+    localStorage.setItem('lq_joystick', mode);
+    return { joystickMode: mode };
+  }),
+
+  setMusicVolume: (vol) => set(() => {
     localStorage.setItem('lq_music_vol', vol.toString());
-    set({ musicVolume: vol });
-  },
+    return { musicVolume: vol };
+  }),
   
   setSfxVolume: (vol) => {
     localStorage.setItem('lq_sfx_vol', vol.toString());
@@ -236,4 +273,3 @@ export const useGameStore = create<State>((set) => ({
   }))
 }))
 
-export { getTimeForLevel }
