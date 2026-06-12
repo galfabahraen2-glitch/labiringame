@@ -161,27 +161,27 @@ export const BlockyCharacter: React.FC<{
 
 // ─── Keyboard Hook ─────────────────────────────────────────────────────────
 function useKeyboardControls() {
-  const [keys, setKeys] = useState({ forward: false, backward: false, left: false, right: false, lookLeft: false, lookRight: false });
+  const keys = useRef({ forward: false, backward: false, left: false, right: false, lookLeft: false, lookRight: false });
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      switch (e.code) {
-        case 'KeyW': case 'ArrowUp': setKeys(k => ({ ...k, forward: true })); break;
-        case 'KeyS': case 'ArrowDown': setKeys(k => ({ ...k, backward: true })); break;
-        case 'KeyA': setKeys(k => ({ ...k, left: true })); break;
-        case 'KeyD': setKeys(k => ({ ...k, right: true })); break;
-        case 'ArrowLeft': setKeys(k => ({ ...k, lookLeft: true })); break;
-        case 'ArrowRight': setKeys(k => ({ ...k, lookRight: true })); break;
+      switch (e.key) {
+        case 'w': case 'W': case 'ArrowUp': keys.current.forward = true; break;
+        case 's': case 'S': case 'ArrowDown': keys.current.backward = true; break;
+        case 'a': case 'A': keys.current.left = true; break;
+        case 'd': case 'D': keys.current.right = true; break;
+        case 'ArrowLeft': keys.current.lookLeft = true; break;
+        case 'ArrowRight': keys.current.lookRight = true; break;
       }
     };
     const handleKeyUp = (e: KeyboardEvent) => {
-      switch (e.code) {
-        case 'KeyW': case 'ArrowUp': setKeys(k => ({ ...k, forward: false })); break;
-        case 'KeyS': case 'ArrowDown': setKeys(k => ({ ...k, backward: false })); break;
-        case 'KeyA': setKeys(k => ({ ...k, left: false })); break;
-        case 'KeyD': setKeys(k => ({ ...k, right: false })); break;
-        case 'ArrowLeft': setKeys(k => ({ ...k, lookLeft: false })); break;
-        case 'ArrowRight': setKeys(k => ({ ...k, lookRight: false })); break;
+      switch (e.key) {
+        case 'w': case 'W': case 'ArrowUp': keys.current.forward = false; break;
+        case 's': case 'S': case 'ArrowDown': keys.current.backward = false; break;
+        case 'a': case 'A': keys.current.left = false; break;
+        case 'd': case 'D': keys.current.right = false; break;
+        case 'ArrowLeft': keys.current.lookLeft = false; break;
+        case 'ArrowRight': keys.current.lookRight = false; break;
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -219,21 +219,22 @@ export const Player: React.FC<PlayerProps> = ({ startPos }) => {
     let lx = joystickLookInput.x;
 
     // Apply keyboard overrides
-    if (keys.forward) jy = 1;
-    if (keys.backward) jy = -1;
+    const k = keys.current;
+    if (k.forward) jy = 1;
+    if (k.backward) jy = -1;
     
     if (joystickMode === 'single') {
-      if (keys.left || keys.lookLeft) jx = -1;
-      if (keys.right || keys.lookRight) jx = 1;
+      if (k.left || k.lookLeft) jx = -1;
+      if (k.right || k.lookRight) jx = 1;
     } else {
-      if (keys.left) jx = -1;
-      if (keys.right) jx = 1;
-      if (keys.lookLeft) lx = -1;
-      if (keys.lookRight) lx = 1;
+      if (k.left) jx = -1;
+      if (k.right) jx = 1;
+      if (k.lookLeft) lx = -1;
+      if (k.lookRight) lx = 1;
     }
 
     // Normalize diagonal movement if using keyboard
-    if ((keys.forward || keys.backward) && (keys.left || keys.right || keys.lookLeft || keys.lookRight)) {
+    if ((k.forward || k.backward) && (k.left || k.right || k.lookLeft || k.lookRight)) {
       const len = Math.sqrt(jx * jx + jy * jy);
       if (len > 0) {
         jx /= len;
