@@ -132,6 +132,11 @@ export const DeathScreen: React.FC = () => {
     }
   }, [gameState]);
 
+  const handleReturn = () => {
+    audio.buttonClick();
+    useGameStore.getState().setGameState('menu');
+  };
+
   return (
     <div style={{
       position: 'fixed',
@@ -163,6 +168,7 @@ export const DeathScreen: React.FC = () => {
           border: '1px solid rgba(160,160,255,0.3)',
           backdropFilter: 'blur(10px)',
           maxWidth: '500px',
+          pointerEvents: 'auto',
         }}>
           <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>👼</div>
           <h1 style={{
@@ -182,6 +188,20 @@ export const DeathScreen: React.FC = () => {
           <p style={{ color: '#8080aa', fontSize: '0.9rem', marginTop: '1rem', fontFamily: 'Inter, sans-serif' }}>
             {isId ? 'Menunggu sesama pejalan lainnya...' : 'Waiting for fellow travelers...'}
           </p>
+          <button onClick={handleReturn}
+            style={{
+              marginTop: '1.5rem',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '20px',
+              border: '1px solid #c0a0ff',
+              background: 'rgba(192,160,255,0.2)',
+              color: '#e8e0ff',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+              fontFamily: 'Inter, sans-serif'
+            }}>
+            🏠 {isId ? 'Kembali ke Menu Utama' : 'Return to Menu'}
+          </button>
         </div>
       </div>
     </div>

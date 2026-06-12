@@ -17,16 +17,16 @@ export const Minimap: React.FC = () => {
 
   return (
     <div style={{
-      position: 'absolute',
-      top: '1rem',
-      right: '1rem',
+      width: '100%',
+      maxWidth: '120px',
+      aspectRatio: '1',
       backgroundColor: 'rgba(0, 0, 0, 0.6)',
       border: '2px solid #00e5ff',
       borderRadius: '8px',
-      padding: '5px',
+      padding: '4px',
       display: 'grid',
-      gridTemplateRows: `repeat(${mazeData.length}, 10px)`,
-      gridTemplateColumns: `repeat(${mazeData[0].length}, 10px)`,
+      gridTemplateRows: `repeat(${mazeData.length}, 1fr)`,
+      gridTemplateColumns: `repeat(${mazeData[0].length}, 1fr)`,
       gap: '1px',
     }}>
       {mazeData.map((row, z) => 
@@ -47,8 +47,8 @@ export const Minimap: React.FC = () => {
             <div 
               key={`map-${x}-${z}`} 
               style={{
-                width: '10px',
-                height: '10px',
+                width: '100%',
+                height: '100%',
                 backgroundColor: bgColor,
                 borderRadius: bgColor === '#00e5ff' || bgColor === '#ff00ff' ? '50%' : '0'
               }}

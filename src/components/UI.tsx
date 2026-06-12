@@ -129,6 +129,7 @@ const PauseMenu: React.FC<{ onClose: () => void }> = ({ onClose }) => {
       backdropFilter: 'blur(10px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       zIndex: 50,
+      pointerEvents: 'auto',
     }}>
       <div style={{
         background: 'rgba(10,10,20,0.95)',
