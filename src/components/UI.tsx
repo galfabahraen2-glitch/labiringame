@@ -167,7 +167,7 @@ const btnStyle = (color: string) => ({
 // ─── Main UI ────────────────────────────────────────────────────────────────
 export const UI: React.FC = () => {
   const { gameState, score, totalTreasures, currentLevel, hp, age, language, joystickMode,
-    setGameState, setLevel, setJoystickInput, setJoystickLookInput, resetGame, playerName, myRoomId, setMyRoomId, revivePlayer } = useGameStore();
+    setGameState, setLevel, setJoystickInput, setJoystickLookInput, resetGame, playerName, revivePlayer } = useGameStore();
 
   const [roomIdInput, setRoomIdInput] = useState('');
   const [connectionStatus, setConnectionStatus] = useState('');
