@@ -8,6 +8,13 @@ export interface MazeResult {
 }
 
 export function generateMaze(level: number): MazeResult {
+  // Simple LCG PRNG seeded by level
+  let seed = level * 1234567;
+  const random = () => {
+    seed = (seed * 9301 + 49297) % 233280;
+    return seed / 233280;
+  };
+
   // Determine size based on level (1-120)
   // Easy: ~11-15, Medium: ~17-25, Hard: ~27-41 (Must be odd numbers for this algorithm)
   let baseSize = 11 + Math.floor(level / 4) * 2;
@@ -28,7 +35,7 @@ export function generateMaze(level: number): MazeResult {
     maze[y][x] = 0;
     
     // Shuffle directions
-    const dirs = [...directions].sort(() => Math.random() - 0.5);
+    const dirs = [...directions].sort(() => random() - 0.5);
     
     for (const [dx, dy] of dirs) {
       const nx = x + dx;
@@ -69,8 +76,8 @@ export function generateMaze(level: number): MazeResult {
   let attempts = 0;
   while (treasures.length < treasureCount && attempts < 1000) {
     attempts++;
-    const tx = Math.floor(Math.random() * (width - 2)) + 1;
-    const tz = Math.floor(Math.random() * (height - 2)) + 1;
+    const tx = Math.floor(random() * (width - 2)) + 1;
+    const tz = Math.floor(random() * (height - 2)) + 1;
     
     // If it's a path, and not start/exit, and not already a treasure
     if (maze[tz][tx] === 0 && 

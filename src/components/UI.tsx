@@ -167,7 +167,7 @@ const btnStyle = (color: string) => ({
 // ─── Main UI ────────────────────────────────────────────────────────────────
 export const UI: React.FC = () => {
   const { gameState, score, totalTreasures, currentLevel, hp, age, language, joystickMode,
-    setGameState, setLevel, setJoystickInput, setJoystickLookInput, resetGame, playerName } = useGameStore();
+    setGameState, setLevel, setJoystickInput, setJoystickLookInput, resetGame, playerName, myRoomId, setMyRoomId, revivePlayer } = useGameStore();
 
   const [roomIdInput, setRoomIdInput] = useState('');
   const [connectionStatus, setConnectionStatus] = useState('');
@@ -287,7 +287,7 @@ export const UI: React.FC = () => {
               {/* Play buttons */}
               <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', justifyContent: 'center' }}>
                 {currentLevel > 1 && (
-                  <button className="btn-start" onClick={() => { audio.buttonClick(); setGameState('playing'); }}>
+                  <button className="btn-start" onClick={() => { audio.buttonClick(); revivePlayer(); setGameState('playing'); }}>
                     ▶ {t.continue} Lv.{currentLevel}
                   </button>
                 )}

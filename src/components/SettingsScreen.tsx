@@ -361,11 +361,26 @@ export const TrackRecordScreen: React.FC = () => {
                   </div>
                   <div style={{ color: '#aaa', fontSize: '0.8rem' }}>{r.date}</div>
                 </div>
-                <div style={{ textAlign: 'right' }}>
+                <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.25rem' }}>
                   <div style={{ color: '#00e5ff', fontSize: '0.9rem' }}>💎 {r.treasures}</div>
                   <div style={{ color: '#aaa', fontSize: '0.8rem' }}>
                     ⏱ {Math.floor(r.timeUsed / 60)}m {r.timeUsed % 60}s
                   </div>
+                  <button
+                    onClick={() => {
+                      audio.buttonClick();
+                      useGameStore.getState().setLevel(r.level);
+                      useGameStore.getState().revivePlayer();
+                      useGameStore.getState().setGameState('playing');
+                    }}
+                    style={{
+                      marginTop: '0.25rem', padding: '0.3rem 0.6rem',
+                      background: 'rgba(0,229,255,0.1)', color: '#00e5ff', border: '1px solid rgba(0,229,255,0.3)',
+                      borderRadius: '4px', fontSize: '0.75rem', cursor: 'pointer',
+                    }}
+                  >
+                    ▶ {isId ? 'Mainkan' : 'Play'}
+                  </button>
                 </div>
               </div>
             ))}
