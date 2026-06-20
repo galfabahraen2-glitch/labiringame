@@ -121,7 +121,6 @@ export function getTimeForLevel(level: number): number {
   return 3 * 60                        // Expert: 3 minutes
 }
 
-export const useGameStore = create<State>((set) => ({
 export const useGameStore = create<State>((set, get) => ({
   gameState: 'menu',
   score: initialScore,
