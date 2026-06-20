@@ -61,25 +61,51 @@ class AudioManager {
     [300, 200, 150, 100].forEach((f, i) => this.playTone(f, 0.2, 'square', 0.4, i * 0.06));
   }
 
-  // 🌀 Portal warp / time tunnel effect
+  // 🌀 Portal warp / time tunnel effect (Luxury Glitter + Mysterious Ambient)
   portalWarp() {
     try {
       const ctx = this.getCtx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(this.sfxGain!);
+      const startTime = ctx.currentTime;
       
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(150, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(1500, ctx.currentTime + 1.8);
+      // 1. Mysterious Ambient (Low Drone)
+      const droneOsc = ctx.createOscillator();
+      const droneGain = ctx.createGain();
+      droneOsc.connect(droneGain);
+      droneGain.connect(this.sfxGain!);
       
-      gain.gain.setValueAtTime(0, ctx.currentTime);
-      gain.gain.linearRampToValueAtTime(0.6, ctx.currentTime + 0.3);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 2.0);
+      droneOsc.type = 'triangle';
+      droneOsc.frequency.setValueAtTime(110, startTime); // Low A
+      droneOsc.frequency.exponentialRampToValueAtTime(330, startTime + 2.0);
       
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 2.0);
+      droneGain.gain.setValueAtTime(0, startTime);
+      droneGain.gain.linearRampToValueAtTime(0.4, startTime + 0.5);
+      droneGain.gain.exponentialRampToValueAtTime(0.01, startTime + 2.5);
+      
+      droneOsc.start(startTime);
+      droneOsc.stop(startTime + 2.5);
+
+      // 2. Luxury Glitter (Sparkling Chimes)
+      for (let i = 0; i < 40; i++) {
+        const pingOsc = ctx.createOscillator();
+        const pingGain = ctx.createGain();
+        pingOsc.connect(pingGain);
+        pingGain.connect(this.sfxGain!);
+        
+        pingOsc.type = 'sine';
+        // Random high frequency for glitter effect (1500Hz to 4500Hz)
+        const freq = 1500 + Math.random() * 3000;
+        pingOsc.frequency.value = freq;
+        
+        // Random time within the 2 second warp window
+        const pingTime = startTime + (Math.random() * 1.8);
+        
+        pingGain.gain.setValueAtTime(0, pingTime);
+        pingGain.gain.linearRampToValueAtTime(0.15, pingTime + 0.02); // Fast attack
+        pingGain.gain.exponentialRampToValueAtTime(0.001, pingTime + 0.4); // Sparkle decay
+        
+        pingOsc.start(pingTime);
+        pingOsc.stop(pingTime + 0.4);
+      }
     } catch(e) {}
   }
 
