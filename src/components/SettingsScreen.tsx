@@ -57,6 +57,41 @@ const T = {
   }
 };
 
+const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+  <div style={{
+    background: 'rgba(255,255,255,0.04)',
+    borderRadius: '12px',
+    padding: '1.25rem',
+    marginBottom: '1rem',
+    border: '1px solid rgba(255,255,255,0.08)',
+  }}>
+    <h3 style={{ color: '#00e5ff', marginBottom: '1rem', fontSize: '0.95rem', letterSpacing: '1px' }}>
+      {title}
+    </h3>
+    {children}
+  </div>
+);
+
+const ColorRow: React.FC<{ colors: string[]; selected: string; onSelect: (c: string) => void }> = ({ colors, selected, onSelect }) => (
+  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+    {colors.map(c => (
+      <button
+        key={c}
+        onClick={() => { audio.buttonClick(); onSelect(c); }}
+        style={{
+          width: '36px', height: '36px',
+          borderRadius: '50%',
+          background: c,
+          border: selected === c ? '3px solid #00e5ff' : '2px solid rgba(255,255,255,0.2)',
+          cursor: 'pointer',
+          boxShadow: selected === c ? '0 0 10px #00e5ff' : 'none',
+          transition: 'all 0.15s',
+        }}
+      />
+    ))}
+  </div>
+);
+
 export const SettingsScreen: React.FC = () => {
   const { playerName, avatarConfig, language, musicVolume, sfxVolume, cameraView, joystickMode,
     setPlayerName, setAvatarConfig, setLanguage, setMusicVolume, setSfxVolume, setCameraView, setJoystickMode,
@@ -95,41 +130,6 @@ export const SettingsScreen: React.FC = () => {
     audio.setSfxVolume(sfxVolume);
     setGameState('menu');
   };
-
-  const Section: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
-    <div style={{
-      background: 'rgba(255,255,255,0.04)',
-      borderRadius: '12px',
-      padding: '1.25rem',
-      marginBottom: '1rem',
-      border: '1px solid rgba(255,255,255,0.08)',
-    }}>
-      <h3 style={{ color: '#00e5ff', marginBottom: '1rem', fontSize: '0.95rem', letterSpacing: '1px' }}>
-        {title}
-      </h3>
-      {children}
-    </div>
-  );
-
-  const ColorRow: React.FC<{ colors: string[]; selected: string; onSelect: (c: string) => void }> = ({ colors, selected, onSelect }) => (
-    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-      {colors.map(c => (
-        <button
-          key={c}
-          onClick={() => { audio.buttonClick(); onSelect(c); }}
-          style={{
-            width: '36px', height: '36px',
-            borderRadius: '50%',
-            background: c,
-            border: selected === c ? '3px solid #00e5ff' : '2px solid rgba(255,255,255,0.2)',
-            cursor: 'pointer',
-            boxShadow: selected === c ? '0 0 10px #00e5ff' : 'none',
-            transition: 'all 0.15s',
-          }}
-        />
-      ))}
-    </div>
-  );
 
   return (
     <div style={{
