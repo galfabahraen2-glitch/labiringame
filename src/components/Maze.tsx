@@ -2,8 +2,8 @@ import React from 'react';
 import { RigidBody } from '@react-three/rapier';
 import { useGameStore } from '../store';
 
-const WALL_HEIGHT = 3;
-export const CELL_SIZE = 4;
+const WALL_HEIGHT = 4;
+export const CELL_SIZE = 5.5;
 
 export const Maze: React.FC = () => {
   const mazeData = useGameStore(state => state.mazeData);

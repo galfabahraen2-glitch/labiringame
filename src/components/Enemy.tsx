@@ -227,7 +227,12 @@ export const Enemy: React.FC<EnemyProps> = ({ type, initialPosition }) => {
 
     // Movement
     let moveDir = new THREE.Vector3();
-    if (isChasing) {
+    const { isHolyAuraActive } = useGameStore.getState();
+
+    if (isHolyAuraActive && dist < cfg.detectionRange * 2) {
+      // Run away from player
+      moveDir = posRef.current.clone().sub(playerPos3).normalize();
+    } else if (isChasing && !isHolyAuraActive) {
       moveDir = playerPos3.clone().sub(posRef.current).normalize();
     } else {
       // Patrol: change direction randomly
@@ -297,7 +302,8 @@ export const EnemySpawner: React.FC = () => {
 
   if (!initialized.current && mazeData) {
     initialized.current = true;
-    const numEnemies = Math.min(2 + Math.floor(currentLevel / 10), 8);
+    if (currentLevel >= 3) {
+      const numEnemies = Math.min(2 + Math.floor(currentLevel / 10), 8);
     const types: EnemyType[] = ['pocong', 'kuntilanak', 'genderuwo', 'iblis', 'berkepala_binatang'];
     const openCells: [number, number][] = [];
     for (let z = 0; z < mazeData.length; z++) {
@@ -317,6 +323,7 @@ export const EnemySpawner: React.FC = () => {
         pos: [wx, 1, wz]
       });
     }
+    } // end level >= 3 check
   }
 
   if (isDead) return null;

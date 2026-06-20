@@ -6,6 +6,61 @@ import { Users, Settings, Map, BookOpen, Home } from 'lucide-react';
 import { Minimap } from './Minimap';
 import { audio } from '../audioManager';
 
+// ─── HolyButtons Component ──────────────────────────────────────────────────
+const HolyButtons: React.FC = () => {
+  const { activateHolyAura, holyAuraCooldown, isHolyAuraActive, currentLevel } = useGameStore();
+  const [cd, setCd] = useState(0);
+
+  useEffect(() => {
+    const int = setInterval(() => {
+      const remaining = Math.max(0, Math.ceil((holyAuraCooldown - Date.now()) / 1000));
+      setCd(remaining);
+    }, 500);
+    return () => clearInterval(int);
+  }, [holyAuraCooldown]);
+
+  if (currentLevel < 3) return null; // Only show when enemies exist
+
+  const isReady = cd === 0 && !isHolyAuraActive;
+
+  return (
+    <div style={{
+      position: 'fixed', top: '70px', left: '50%', transform: 'translateX(-50%)',
+      display: 'flex', gap: '10px', zIndex: 40, pointerEvents: 'auto'
+    }}>
+      <button
+        disabled={!isReady}
+        onClick={() => { audio.buttonClick(); activateHolyAura(); }}
+        style={{
+          background: isHolyAuraActive ? 'rgba(255, 215, 0, 0.8)' : isReady ? 'rgba(255,255,255,0.9)' : 'rgba(100,100,100,0.8)',
+          color: isHolyAuraActive ? '#fff' : isReady ? '#000' : '#ccc',
+          border: '2px solid #ffd700', borderRadius: '8px', padding: '6px 12px',
+          fontWeight: 'bold', fontSize: '0.85rem', cursor: isReady ? 'pointer' : 'not-allowed',
+          boxShadow: isHolyAuraActive ? '0 0 15px #ffd700' : 'none',
+          fontFamily: 'serif', WebkitTapHighlightColor: 'transparent'
+        }}
+      >
+        ALLAH {cd > 0 ? `(${cd}s)` : ''}
+      </button>
+      <button
+        disabled={!isReady}
+        onClick={() => { audio.buttonClick(); activateHolyAura(); }}
+        style={{
+          background: isHolyAuraActive ? 'rgba(255, 215, 0, 0.8)' : isReady ? 'rgba(255,255,255,0.9)' : 'rgba(100,100,100,0.8)',
+          color: isHolyAuraActive ? '#fff' : isReady ? '#000' : '#ccc',
+          border: '2px solid #ffd700', borderRadius: '8px', padding: '6px 12px',
+          fontWeight: 'bold', fontSize: '0.85rem', cursor: isReady ? 'pointer' : 'not-allowed',
+          boxShadow: isHolyAuraActive ? '0 0 15px #ffd700' : 'none',
+          fontFamily: 'serif', WebkitTapHighlightColor: 'transparent'
+        }}
+      >
+        MUHAMMAD SAWW {cd > 0 ? `(${cd}s)` : ''}
+      </button>
+    </div>
+  );
+};
+
+
 const T = {
   id: {
     singlePlayer: 'Main Sendiri',
@@ -175,6 +230,7 @@ export const UI: React.FC = () => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [myRoomId, setMyRoomId] = useState('');
   const [showPause, setShowPause] = useState(false);
+  const [showRules, setShowRules] = useState(false);
 
   const t = T[language];
   const isCrystalPalace = currentLevel > 120;
@@ -247,6 +303,32 @@ export const UI: React.FC = () => {
 
   return (
     <div className="ui-container">
+      {/* ── RULES MODAL ── */}
+      {showRules && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 60,
+          display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'auto', backdropFilter: 'blur(5px)'
+        }}>
+          <div style={{
+            background: 'linear-gradient(to bottom, #1a1a2e, #16213e)', border: '1px solid #00e5ff',
+            borderRadius: '16px', padding: '2rem', maxWidth: '400px', width: '90%', color: '#fff',
+            boxShadow: '0 0 30px rgba(0,229,255,0.2)'
+          }}>
+            <h2 style={{ color: '#00e5ff', textAlign: 'center', marginBottom: '1rem' }}>📜 Petunjuk Perjalanan</h2>
+            <ul style={{ fontSize: '0.9rem', lineHeight: '1.6', color: '#ccc', paddingLeft: '1.2rem', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+              <li><strong>Tujuan Utama:</strong> Temukan <em>Portal Cahaya</em> untuk naik ke level berikutnya sebelum waktu habis.</li>
+              <li><strong>Zamrud (Harta):</strong> Kumpulkan Zamrud hijau yang tersebar untuk memulihkan Kesehatan (HP) dan Kekuatan Jiwa.</li>
+              <li><strong>Setan Penggoda:</strong> Mulai <strong>Level 3</strong>, hantu dan bayangan hitam akan berpatroli. Jika tersentuh, Anda akan kehilangan nyawa dan diteleportasi menjauh!</li>
+              <li><strong>Malaikat Penolong:</strong> Gunakan tombol <strong>ALLAH</strong> atau <strong>MUHAMMAD SAWW</strong> di tengah atas layar untuk memanggil Malaikat Cahaya (Holy Aura). Saat aktif, setan akan lari menjauhi Anda! Tombol ini memiliki waktu tunggu (cooldown).</li>
+            </ul>
+            <button onClick={() => setShowRules(false)} style={{
+              marginTop: '1.5rem', width: '100%', padding: '0.8rem', background: '#00e5ff', color: '#000',
+              border: 'none', borderRadius: '8px', fontWeight: 'bold', fontSize: '1rem', cursor: 'pointer'
+            }}>Saya Mengerti</button>
+          </div>
+        </div>
+      )}
+
       {/* ── WARP EFFECT ── */}
       {gameState === 'warp' && (
         <div style={{
@@ -414,7 +496,26 @@ export const UI: React.FC = () => {
             >
               ⏸ {t.pause}
             </button>
+            <button
+              onClick={() => { audio.buttonClick(); setShowRules(true); }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '6px',
+                background: 'rgba(52, 152, 219, 0.85)',
+                border: '2px solid rgba(52, 152, 219, 0.6)',
+                borderRadius: '30px',
+                padding: '8px 18px',
+                color: '#fff', cursor: 'pointer',
+                fontSize: '0.9rem', fontWeight: 'bold',
+                backdropFilter: 'blur(8px)',
+                fontFamily: 'Inter, sans-serif',
+                WebkitTapHighlightColor: 'transparent',
+              }}
+            >
+              📖 Petunjuk
+            </button>
           </div>
+
+          <HolyButtons />
 
           <div className="hud">
             {/* Left side status bars */}

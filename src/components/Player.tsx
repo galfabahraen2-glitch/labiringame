@@ -82,6 +82,35 @@ const Accessory: React.FC<{ type: AvatarConfig['accessory']; color?: string }> =
   return null;
 };
 
+// ─── Angel Helper ───────────────────────────────────────────────────────────
+const AngelHelper: React.FC<{ animPhase: number }> = ({ animPhase }) => {
+  const floatY = Math.sin(animPhase * 2) * 0.3;
+  return (
+    <group position={[1.2, 1.5 + floatY, 0]}>
+      {/* Glowing Body */}
+      <mesh>
+        <capsuleGeometry args={[0.2, 0.6, 4, 8]} />
+        <meshStandardMaterial color="#fffacd" emissive="#ffffff" emissiveIntensity={1} transparent opacity={0.8} />
+      </mesh>
+      {/* Wings */}
+      <mesh position={[-0.2, 0.2, -0.1]} rotation={[0, -0.5, 0]}>
+        <planeGeometry args={[0.5, 0.8]} />
+        <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.5} transparent opacity={0.6} side={THREE.DoubleSide} />
+      </mesh>
+      <mesh position={[0.2, 0.2, -0.1]} rotation={[0, 0.5, 0]}>
+        <planeGeometry args={[0.5, 0.8]} />
+        <meshStandardMaterial color="#ffffff" emissive="#ffffff" emissiveIntensity={0.5} transparent opacity={0.6} side={THREE.DoubleSide} />
+      </mesh>
+      {/* Halo */}
+      <mesh position={[0, 0.6, 0]} rotation={[Math.PI / 2, 0, 0]}>
+        <torusGeometry args={[0.15, 0.02, 8, 24]} />
+        <meshStandardMaterial color="#ffd700" emissive="#ffd700" emissiveIntensity={2} />
+      </mesh>
+      <pointLight color="#ffffff" intensity={2} distance={5} />
+    </group>
+  );
+};
+
 // ─── Full Blocky Human Body ─────────────────────────────────────────────────
 export const BlockyCharacter: React.FC<{
   avatar: AvatarConfig;
@@ -205,7 +234,7 @@ export const Player: React.FC<PlayerProps> = ({ startPos }) => {
   const characterGroup = useRef<THREE.Group>(null);
   const animPhase = useRef(0);
 
-  const { joystickInput, joystickLookInput, joystickMode, cameraView, gameState, isDead, setPlayerPosition, setPlayerWorldPos, playerName, avatarConfig, tickTime } = useGameStore();
+  const { joystickInput, joystickLookInput, joystickMode, cameraView, gameState, isDead, setPlayerPosition, setPlayerWorldPos, playerName, avatarConfig, tickTime, isHolyAuraActive } = useGameStore();
   const keys = useKeyboardControls();
 
   useFrame((state, delta) => {
@@ -279,7 +308,13 @@ export const Player: React.FC<PlayerProps> = ({ startPos }) => {
       length = Math.sqrt(fwd * fwd + strafe * strafe);
     }
 
-    body.current.setLinvel({ x: moveX, y: velocity.y, z: moveZ }, true);
+    const targetVx = moveX;
+    const targetVz = moveZ;
+    // Movement Smoothing using Lerp
+    const smoothVx = THREE.MathUtils.lerp(velocity.x, targetVx, 10 * delta);
+    const smoothVz = THREE.MathUtils.lerp(velocity.z, targetVz, 10 * delta);
+
+    body.current.setLinvel({ x: smoothVx, y: velocity.y, z: smoothVz }, true);
 
     const playerPos = body.current.translation();
     setPlayerWorldPos([playerPos.x, playerPos.y, playerPos.z]);
@@ -339,6 +374,7 @@ export const Player: React.FC<PlayerProps> = ({ startPos }) => {
           showName={true}
           animPhase={animPhase.current}
         />
+        {isHolyAuraActive && <AngelHelper animPhase={animPhase.current} />}
       </group>
     </RigidBody>
   );

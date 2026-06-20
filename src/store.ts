@@ -31,6 +31,9 @@ interface State {
   age: number           // 0-100 (represents remaining life vigor)
   timeLeft: number      // seconds
   isDead: boolean
+  // Holy Aura
+  isHolyAuraActive: boolean
+  holyAuraCooldown: number // 0 means ready
   // Maze data
   joystickInput: { x: number, y: number }
   joystickLookInput: { x: number, y: number }
@@ -65,6 +68,9 @@ interface State {
   setPlayerWorldPos: (pos: [number, number, number]) => void
   setOtherPlayerPosition: (id: string, pos: [number, number, number], rot: number, name: string, avatar: AvatarConfig) => void
   removeOtherPlayer: (id: string) => void
+  // Special Abilities
+  activateHolyAura: () => void
+  tickHolyAuraCooldown: (delta: number) => void
   // Life system actions
   takeDamage: (amount: number) => void
   tickTime: (delta: number) => void
@@ -116,6 +122,7 @@ export function getTimeForLevel(level: number): number {
 }
 
 export const useGameStore = create<State>((set) => ({
+export const useGameStore = create<State>((set, get) => ({
   gameState: 'menu',
   score: initialScore,
   totalTreasures: 0,
@@ -124,6 +131,8 @@ export const useGameStore = create<State>((set) => ({
   age: 100,
   timeLeft: getTimeForLevel(initialLevel),
   isDead: false,
+  isHolyAuraActive: false,
+  holyAuraCooldown: 0,
   joystickInput: { x: 0, y: 0 },
   joystickLookInput: { x: 0, y: 0 },
   playerPosition: [0, 0],
@@ -154,7 +163,7 @@ export const useGameStore = create<State>((set) => ({
   
   setLevel: (level) => set(() => {
     localStorage.setItem('lq_level', level.toString());
-    return { currentLevel: level, hp: 100, age: 100, isDead: false, timeLeft: getTimeForLevel(level) };
+    return { currentLevel: level, hp: 100, age: 100, isDead: false, timeLeft: getTimeForLevel(level), isHolyAuraActive: false, holyAuraCooldown: 0 };
   }),
   
   setMazeData: (data, exitPos, startPos, treasures) => set({ 
@@ -164,7 +173,7 @@ export const useGameStore = create<State>((set) => ({
   nextLevel: () => set((s) => {
     const next = s.currentLevel + 1;
     localStorage.setItem('lq_level', next.toString());
-    return { currentLevel: next, hp: 100, age: 100, isDead: false, timeLeft: getTimeForLevel(next) };
+    return { currentLevel: next, hp: 100, age: 100, isDead: false, timeLeft: getTimeForLevel(next), isHolyAuraActive: false, holyAuraCooldown: 0 };
   }),
   
   setJoystickInput: (x, y) => set({ joystickInput: { x, y } }),
@@ -183,8 +192,24 @@ export const useGameStore = create<State>((set) => ({
     return { otherPlayers: newOthers }
   }),
 
+  activateHolyAura: () => {
+    const { holyAuraCooldown } = get();
+    const now = Date.now();
+    // holyAuraCooldown now stores the timestamp when it will be ready
+    if (now >= holyAuraCooldown) {
+      set({ isHolyAuraActive: true, holyAuraCooldown: now + 20000 }); // 20s cooldown
+      setTimeout(() => {
+        set({ isHolyAuraActive: false });
+      }, 10000); // 10s duration
+    }
+  },
+
+  tickHolyAuraCooldown: () => {
+    // we don't need this anymore, UI can just check Date.now() against holyAuraCooldown
+  },
+
   takeDamage: (amount) => set((s) => {
-    if (s.isDead) return {};
+    if (s.isDead || s.isHolyAuraActive) return {};
     const newHp = Math.max(0, s.hp - amount);
     const newAge = Math.max(0, s.age - amount * 0.5);
     const newTime = Math.max(0, s.timeLeft - amount * 2); // touching enemy cuts time
@@ -269,7 +294,8 @@ export const useGameStore = create<State>((set) => ({
     hp: 100,
     age: 100,
     isDead: false,
+    isHolyAuraActive: false,
+    holyAuraCooldown: 0,
     timeLeft: getTimeForLevel(s.currentLevel)
   }))
 }))
-
