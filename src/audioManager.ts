@@ -61,6 +61,28 @@ class AudioManager {
     [300, 200, 150, 100].forEach((f, i) => this.playTone(f, 0.2, 'square', 0.4, i * 0.06));
   }
 
+  // 🌀 Portal warp / time tunnel effect
+  portalWarp() {
+    try {
+      const ctx = this.getCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(this.sfxGain!);
+      
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(150, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(1500, ctx.currentTime + 1.8);
+      
+      gain.gain.setValueAtTime(0, ctx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.6, ctx.currentTime + 0.3);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 2.0);
+      
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 2.0);
+    } catch(e) {}
+  }
+
   // ✅ Level complete: triumphant fanfare
   levelComplete() {
     const notes = [523, 659, 784, 659, 784, 1047];

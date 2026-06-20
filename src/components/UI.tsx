@@ -247,6 +247,20 @@ export const UI: React.FC = () => {
 
   return (
     <div className="ui-container">
+      {/* ── WARP EFFECT ── */}
+      {gameState === 'warp' && (
+        <div style={{
+          position: 'fixed', inset: 0,
+          background: 'black',
+          zIndex: 200,
+          display: 'flex', justifyContent: 'center', alignItems: 'center',
+          overflow: 'hidden'
+        }}>
+          <div className="warp-tunnel"></div>
+          <div className="warp-overlay"></div>
+        </div>
+      )}
+
       {/* ── MENU ── */}
       {gameState === 'menu' && (
         <div className="menu-overlay interactive" style={{ gap: '1rem', maxWidth: '420px' }}>

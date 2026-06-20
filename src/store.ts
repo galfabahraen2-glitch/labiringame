@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-export type GameState = 'menu' | 'levelmap' | 'playing' | 'dead' | 'victory' | 'settings' | 'trackrecord'
+export type GameState = 'menu' | 'levelmap' | 'playing' | 'dead' | 'victory' | 'settings' | 'trackrecord' | 'warp'
 
 export type Language = 'id' | 'en'
 export type CameraView = 'isometric' | 'third-person' | 'first-person'

@@ -269,3 +269,42 @@ input[type="text"]:focus {
     padding-right: max(1rem, env(safe-area-inset-right));
   }
 }
+
+/* ─── Warp Time Tunnel Effect ─────────────────────── */
+.warp-tunnel {
+  position: absolute;
+  width: 200%; height: 200%;
+  top: -50%; left: -50%;
+  background: conic-gradient(
+    from 0deg,
+    #00e5ff, #000 10deg, #ff00ff 20deg, #000 30deg,
+    #00e5ff 40deg, #000 50deg, #ff00ff 60deg, #000 70deg,
+    #00e5ff 80deg, #000 90deg, #ff00ff 100deg, #000 110deg,
+    #00e5ff 120deg, #000 130deg, #ff00ff 140deg, #000 150deg,
+    #00e5ff 160deg, #000 170deg, #ff00ff 180deg, #000 190deg,
+    #00e5ff 200deg, #000 210deg, #ff00ff 220deg, #000 230deg,
+    #00e5ff 240deg, #000 250deg, #ff00ff 260deg, #000 270deg,
+    #00e5ff 280deg, #000 290deg, #ff00ff 300deg, #000 310deg,
+    #00e5ff 320deg, #000 330deg, #ff00ff 340deg, #000 350deg, #00e5ff
+  );
+  animation: warpSpin 1s linear infinite, warpZoom 2s ease-in forwards;
+  opacity: 0;
+}
+
+.warp-overlay {
+  position: absolute;
+  width: 100%; height: 100%;
+  background: radial-gradient(circle, transparent 5%, #000 60%);
+  z-index: 1;
+}
+
+@keyframes warpSpin {
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes warpZoom {
+  0% { transform: scale(1); opacity: 0; }
+  20% { opacity: 1; }
+  80% { opacity: 1; transform: scale(2); filter: brightness(2); }
+  100% { transform: scale(5); opacity: 0; filter: brightness(3); }
+}

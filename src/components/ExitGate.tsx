@@ -2,6 +2,7 @@ import React, { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import { useGameStore } from '../store';
+import { audio } from '../audioManager';
 import { Sparkles } from '@react-three/drei';
 import * as THREE from 'three';
 
@@ -24,7 +25,15 @@ export const ExitGate: React.FC<ExitGateProps> = ({ position }) => {
       if (currentLevel >= 121) {
         setGameState('victory'); // Finished Crystal Palace
       } else {
-        nextLevel(); // Automatically moves to next level and triggers generation
+        audio.portalWarp();
+        setGameState('warp');
+        setTimeout(() => {
+          // Double check they didn't restart game during warp
+          if (useGameStore.getState().gameState === 'warp') {
+            nextLevel();
+            useGameStore.getState().setGameState('playing');
+          }
+        }, 2000);
       }
     }}>
       <CuboidCollider args={[1, 2, 1]} position={position} />
