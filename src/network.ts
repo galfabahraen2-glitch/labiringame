@@ -49,16 +49,27 @@ class NetworkManager {
     this.roomId = null;
   }
 
+  // ─── Generate Short ID ──────────────────────────────────────────────────
+  private generateShortId(): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let id = '';
+    for (let i = 0; i < 6; i++) {
+      id += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return `LQ-${id}`; // Prefix with LQ to avoid collisions
+  }
+
   // ─── Create a new Peer with fallback ────────────────────────────────────
-  private createPeer(): Promise<Peer> {
+  private createPeer(customId?: string): Promise<Peer> {
     return new Promise((resolve, reject) => {
-      const peer = new Peer(PEER_CONFIG);
+      const peerId = customId || this.generateShortId();
+      const peer = new Peer(peerId, PEER_CONFIG);
 
       const timeout = setTimeout(() => {
         peer.destroy();
         // Fallback: try without custom config (use PeerJS defaults)
         console.warn('[Network] Primary server timeout, trying fallback...');
-        const fallback = new Peer();
+        const fallback = new Peer(peerId);
         const fbTimeout = setTimeout(() => {
           fallback.destroy();
           reject(new Error('Tidak dapat terhubung ke server. Periksa koneksi internet Anda.'));
@@ -73,7 +84,7 @@ class NetworkManager {
         // On broker error, try fallback without config
         console.warn('[Network] Primary peer error, trying fallback...', e.type);
         peer.destroy();
-        const fallback = new Peer();
+        const fallback = new Peer(peerId);
         const fbTimeout = setTimeout(() => {
           fallback.destroy();
           reject(new Error('Koneksi gagal. Coba lagi dalam beberapa detik.'));
