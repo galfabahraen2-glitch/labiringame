@@ -1,6 +1,6 @@
-import React from 'react';
 import { RigidBody } from '@react-three/rapier';
 import { useGameStore } from '../store';
+import { Paradise } from './Paradise';
 
 const WALL_HEIGHT = 4;
 export const CELL_SIZE = 5.5;
@@ -16,7 +16,11 @@ export const Maze: React.FC = () => {
   // Crystal Palace (Level 121) special materials
   const isCrystalPalace = currentLevel > 120;
   
-  const wallColor = isCrystalPalace ? "#ffffff" : "#b0b0b0";
+  if (isCrystalPalace) {
+    return <Paradise />;
+  }
+
+  const wallColor = "#b0b0b0";
   const floorColor = isCrystalPalace ? "#e0f7fa" : "#808080";
   const wallRoughness = isCrystalPalace ? 0.1 : 0.7;
   const floorRoughness = isCrystalPalace ? 0.1 : 0.8;
@@ -33,11 +37,7 @@ export const Maze: React.FC = () => {
               receiveShadow
             >
               <boxGeometry args={[CELL_SIZE, WALL_HEIGHT, CELL_SIZE]} />
-              {isCrystalPalace ? (
-                <meshPhysicalMaterial color={wallColor} roughness={wallRoughness} transmission={transmission} thickness={1} />
-              ) : (
-                <meshStandardMaterial color={wallColor} roughness={wallRoughness} />
-              )}
+              <meshStandardMaterial color={wallColor} roughness={wallRoughness} />
             </mesh>
           </RigidBody>
         );
@@ -59,11 +59,7 @@ export const Maze: React.FC = () => {
           receiveShadow
         >
           <planeGeometry args={[width * 1.5, height * 1.5]} />
-          {isCrystalPalace ? (
-            <meshPhysicalMaterial color={floorColor} roughness={floorRoughness} transmission={0.5} />
-          ) : (
-            <meshStandardMaterial color={floorColor} roughness={floorRoughness} />
-          )}
+          <meshStandardMaterial color={floorColor} roughness={floorRoughness} />
         </mesh>
       </RigidBody>
       

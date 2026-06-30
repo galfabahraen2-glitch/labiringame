@@ -231,6 +231,7 @@ export const UI: React.FC = () => {
   const [myRoomId, setMyRoomId] = useState('');
   const [showPause, setShowPause] = useState(false);
   const [showRules, setShowRules] = useState(false);
+  const [showTeleport, setShowTeleport] = useState(false);
 
   const t = T[language];
   const isCrystalPalace = currentLevel > 120;
@@ -388,7 +389,7 @@ export const UI: React.FC = () => {
                   </button>
                 )}
                 <button className="btn-start" style={{ background: 'linear-gradient(45deg, #16a085, #1abc9c)' }}
-                  onClick={() => { audio.buttonClick(); setLevel(1); setGameState('playing'); }}>
+                  onClick={() => { audio.buttonClick(); resetGame(); setGameState('playing'); }}>
                   🆕 {t.newGame}
                 </button>
               </div>
@@ -517,6 +518,24 @@ export const UI: React.FC = () => {
 
           <HolyButtons />
 
+          {/* Teleport Button (Crystal Palace Only) */}
+          {isCrystalPalace && (
+            <div style={{ position: 'fixed', bottom: '130px', left: '50%', transform: 'translateX(-50%)', zIndex: 40, pointerEvents: 'auto' }}>
+              <button
+                onClick={() => { audio.buttonClick(); setShowTeleport(true); }}
+                style={{
+                  background: 'linear-gradient(45deg, #9b59b6, #8e44ad)',
+                  color: '#fff', border: '2px solid #e056fd', borderRadius: '30px',
+                  padding: '8px 20px', fontWeight: 'bold', fontSize: '1rem',
+                  boxShadow: '0 0 15px rgba(155, 89, 182, 0.6)', cursor: 'pointer',
+                  fontFamily: 'Inter, sans-serif'
+                }}
+              >
+                🌌 Teleportasi
+              </button>
+            </div>
+          )}
+
           <div className="hud">
             {/* Left side status bars */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
@@ -568,6 +587,44 @@ export const UI: React.FC = () => {
             </>
           )}
           {showPause && <PauseMenu onClose={() => setShowPause(false)} />}
+          
+          {/* Teleport Modal */}
+          {showTeleport && (
+            <div style={{
+              position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 60,
+              display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'auto', backdropFilter: 'blur(5px)'
+            }}>
+              <div style={{
+                background: 'linear-gradient(to bottom, #2c3e50, #34495e)', border: '1px solid #9b59b6',
+                borderRadius: '16px', padding: '1.5rem', width: '300px', display: 'flex', flexDirection: 'column', gap: '0.8rem'
+              }}>
+                <h3 style={{ color: '#e056fd', textAlign: 'center', margin: '0 0 1rem 0' }}>Pilih Lokasi Surga</h3>
+                {[
+                  { label: '🏰 Istana Yakut', pos: [-30, 1, -20] },
+                  { label: '🏰 Istana Marjan', pos: [30, 1, -20] },
+                  { label: '🐟 Lantai Kaca & Ikan', pos: [20, 1, 20] },
+                  { label: '🌴 Kebun Kurma & Tin', pos: [-20, 1, 15] },
+                  { label: '🍎 Kebun Tropis (Pisang, Jeruk)', pos: [25, 1, 15] },
+                ].map(loc => (
+                  <button key={loc.label}
+                    onClick={() => {
+                      audio.buttonClick();
+                      const { teleportPlayer } = useGameStore.getState();
+                      teleportPlayer([loc.pos[0], loc.pos[1], loc.pos[2]]);
+                      setShowTeleport(false);
+                    }}
+                    style={{
+                      padding: '0.8rem', background: 'rgba(255,255,255,0.1)', color: '#fff',
+                      border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', cursor: 'pointer', textAlign: 'left'
+                    }}
+                  >
+                    {loc.label}
+                  </button>
+                ))}
+                <button onClick={() => setShowTeleport(false)} style={{ marginTop: '0.5rem', padding: '0.8rem', background: '#e74c3c', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer' }}>Batal</button>
+              </div>
+            </div>
+          )}
         </>
       )}
 

@@ -180,7 +180,7 @@ export const Enemy: React.FC<EnemyProps> = ({ type, initialPosition }) => {
   const animTime = useRef(0);
   const patrolTimer = useRef(Math.random() * 3);
 
-  const { playerWorldPos, takeDamage, setPlayerWorldPos, mazeData, playerStartPosition, isDead } = useGameStore();
+  const { playerWorldPos, takeDamage, teleportPlayer, mazeData, playerStartPosition, isDead } = useGameStore();
 
   const cfg = ENEMY_CONFIG[type];
 
@@ -197,7 +197,7 @@ export const Enemy: React.FC<EnemyProps> = ({ type, initialPosition }) => {
     const cell = openCells[Math.floor(Math.random() * openCells.length)];
     const wx = (cell[0] - mazeData[0].length / 2) * CELL_SIZE;
     const wz = (cell[1] - mazeData.length / 2) * CELL_SIZE;
-    setPlayerWorldPos([wx, 1, wz]);
+    teleportPlayer([wx, 1, wz]);
     takeDamage(cfg.damage);
     audio.playerHit();
   };

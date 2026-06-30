@@ -5,6 +5,7 @@ export interface MazeResult {
   exitX: number;
   exitZ: number;
   treasures: { x: number; z: number }[];
+  beggars: { x: number; z: number }[];
 }
 
 export function generateMaze(level: number): MazeResult {
@@ -88,12 +89,32 @@ export function generateMaze(level: number): MazeResult {
     }
   }
 
+  // Place beggars
+  const beggars: {x: number, z: number}[] = [];
+  const beggarCount = 1 + Math.floor(level / 5);
+  
+  attempts = 0;
+  while (beggars.length < beggarCount && attempts < 1000) {
+    attempts++;
+    const tx = Math.floor(random() * (width - 2)) + 1;
+    const tz = Math.floor(random() * (height - 2)) + 1;
+    
+    if (maze[tz][tx] === 0 && 
+       !(tx === startX && tz === startZ) && 
+       !(tx === exitX && tz === exitZ) &&
+       !treasures.some(t => t.x === tx && t.z === tz) &&
+       !beggars.some(b => b.x === tx && b.z === tz)) {
+      beggars.push({ x: tx, z: tz });
+    }
+  }
+
   return {
     data: maze,
     startX,
     startZ,
     exitX,
     exitZ,
-    treasures
+    treasures,
+    beggars
   };
 }

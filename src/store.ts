@@ -39,10 +39,12 @@ interface State {
   joystickLookInput: { x: number, y: number }
   playerPosition: [number, number]
   playerWorldPos: [number, number, number]
+  forceTeleportPos: [number, number, number] | null
   mazeData: number[][] | null
   exitPosition: [number, number] | null
   playerStartPosition: [number, number] | null
   treasures: { x: number, z: number, id: string }[]
+  beggars: { x: number, z: number, id: string }[]
   otherPlayers: Record<string, { position: [number, number, number], rotation: number, name: string, avatar: AvatarConfig }>
   // Player identity
   playerName: string
@@ -60,12 +62,14 @@ interface State {
   addScore: (points: number) => void
   setTotalTreasures: (total: number) => void
   setLevel: (level: number) => void
-  setMazeData: (data: number[][], exitPos: [number, number], startPos: [number, number], treasures: {x: number, z: number, id: string}[]) => void
+  setMazeData: (data: number[][], exitPos: [number, number], startPos: [number, number], treasures: {x: number, z: number, id: string}[], beggars: {x: number, z: number, id: string}[]) => void
   nextLevel: () => void
   setJoystickInput: (x: number, y: number) => void
   setJoystickLookInput: (x: number, y: number) => void
   setPlayerPosition: (pos: [number, number]) => void
   setPlayerWorldPos: (pos: [number, number, number]) => void
+  teleportPlayer: (pos: [number, number, number]) => void
+  clearTeleport: () => void
   setOtherPlayerPosition: (id: string, pos: [number, number, number], rot: number, name: string, avatar: AvatarConfig) => void
   removeOtherPlayer: (id: string) => void
   // Special Abilities
@@ -77,6 +81,7 @@ interface State {
   killPlayer: () => void
   revivePlayer: () => void
   collectTreasure: () => void
+  giveAlms: (id: string) => boolean
   // Settings actions
   setPlayerName: (name: string) => void
   setAvatarConfig: (config: Partial<AvatarConfig>) => void
@@ -136,10 +141,12 @@ export const useGameStore = create<State>((set, get) => ({
   joystickLookInput: { x: 0, y: 0 },
   playerPosition: [0, 0],
   playerWorldPos: [0, 0, 0],
+  forceTeleportPos: null,
   mazeData: null,
   exitPosition: null,
   playerStartPosition: null,
   treasures: [],
+  beggars: [],
   otherPlayers: {},
   playerName: savedName,
   avatarConfig: initialAvatar,
@@ -165,8 +172,8 @@ export const useGameStore = create<State>((set, get) => ({
     return { currentLevel: level, hp: 100, age: 100, isDead: false, timeLeft: getTimeForLevel(level), isHolyAuraActive: false, holyAuraCooldown: 0 };
   }),
   
-  setMazeData: (data, exitPos, startPos, treasures) => set({ 
-    mazeData: data, exitPosition: exitPos, playerStartPosition: startPos, treasures 
+  setMazeData: (data, exitPos, startPos, treasures, beggars) => set({ 
+    mazeData: data, exitPosition: exitPos, playerStartPosition: startPos, treasures, beggars 
   }),
   
   nextLevel: () => set((s) => {
@@ -180,6 +187,8 @@ export const useGameStore = create<State>((set, get) => ({
 
   setPlayerPosition: (pos) => set({ playerPosition: pos }),
   setPlayerWorldPos: (pos) => set({ playerWorldPos: pos }),
+  teleportPlayer: (pos) => set({ forceTeleportPos: pos, playerWorldPos: pos }),
+  clearTeleport: () => set({ forceTeleportPos: null }),
   
   setOtherPlayerPosition: (id, pos, rot, name, avatar) => set((s) => ({
     otherPlayers: { ...s.otherPlayers, [id]: { position: pos, rotation: rot, name, avatar } }
@@ -240,6 +249,25 @@ export const useGameStore = create<State>((set, get) => ({
       age: Math.min(100, s.age + 15),
     };
   }),
+
+  giveAlms: (id) => {
+    const s = get();
+    if (s.score >= 1) { // Player needs at least 1 score/emerald to give
+      const newScore = s.score - 1 + 233;
+      localStorage.setItem('lq_score', newScore.toString());
+      set({
+        score: newScore,
+        hp: Math.min(100, s.hp + 117), // We cap at 100, wait, should we uncap? Let's cap at 100 but give huge amounts
+        age: Math.min(100, s.age + 117), 
+        // Note: the prompt says 234 split between hp and age, so 117 each.
+        // Wait, the prompt says +234 HP/Age. But HP/Age are capped at 100.
+        // I will just max them both out.
+        beggars: s.beggars.filter(b => b.id !== id)
+      });
+      return true; // Success
+    }
+    return false; // Failed, not enough
+  },
 
   setPlayerName: (name) => {
     localStorage.setItem('lq_name', name);

@@ -1,4 +1,4 @@
-import { Suspense, useEffect } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { Canvas } from '@react-three/fiber';
 import { Physics } from '@react-three/rapier';
 import { UI } from './components/UI';
@@ -6,6 +6,7 @@ import { Maze, CELL_SIZE } from './components/Maze';
 import { Player } from './components/Player';
 import { OtherPlayers } from './components/OtherPlayers';
 import { Treasure } from './components/Treasure';
+import { Beggar } from './components/Beggar';
 import { ExitGate } from './components/ExitGate';
 import { EnemySpawner } from './components/Enemy';
 import { DeathScreen } from './components/DeathScreen';
@@ -16,7 +17,9 @@ import { generateMaze } from './utils/mazeGenerator';
 import { audio } from './audioManager';
 
 function GameScene() {
-  const { currentLevel, setMazeData, treasures, exitPosition, playerStartPosition, setTotalTreasures } = useGameStore();
+  const { currentLevel, setMazeData, treasures, beggars, exitPosition, playerStartPosition, setTotalTreasures } = useGameStore();
+  const [loadedLevel, setLoadedLevel] = useState(0);
+  const isCrystalPalace = currentLevel > 120;
 
   useEffect(() => {
     const result = generateMaze(currentLevel);
@@ -37,11 +40,18 @@ function GameScene() {
       id: `treasure-${currentLevel}-${i}`
     }));
 
-    setMazeData(result.data, worldExit, worldStart, worldTreasures);
+    const worldBeggars = result.beggars.map((b, i) => ({
+      x: (b.x - widthOffset) * CELL_SIZE,
+      z: (b.z - heightOffset) * CELL_SIZE,
+      id: `beggar-${currentLevel}-${i}`
+    }));
+
+    setMazeData(result.data, worldExit, worldStart, worldTreasures, worldBeggars);
     setTotalTreasures(worldTreasures.length);
+    setLoadedLevel(currentLevel);
   }, [currentLevel, setMazeData, setTotalTreasures]);
 
-  if (!exitPosition) return null;
+  if (!exitPosition || loadedLevel !== currentLevel) return null;
 
   return (
     <Physics gravity={[0, -9.81, 0]} key={currentLevel}>
@@ -51,8 +61,11 @@ function GameScene() {
       {treasures.map((t: any) => (
         <Treasure key={t.id} id={t.id} position={[t.x, 1, t.z]} />
       ))}
-      <ExitGate position={[exitPosition[0], 1.5, exitPosition[1]]} />
-      <EnemySpawner key={`enemies-${currentLevel}`} />
+      {beggars.map((b: any) => (
+        <Beggar key={b.id} id={b.id} position={[b.x, 1, b.z]} />
+      ))}
+      {!isCrystalPalace && <ExitGate position={[exitPosition[0], 1.5, exitPosition[1]]} />}
+      {!isCrystalPalace && <EnemySpawner key={`enemies-${currentLevel}`} />}
     </Physics>
   );
 }

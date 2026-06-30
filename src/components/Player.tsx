@@ -234,11 +234,20 @@ export const Player: React.FC<PlayerProps> = ({ startPos }) => {
   const characterGroup = useRef<THREE.Group>(null);
   const animPhase = useRef(0);
 
-  const { joystickInput, joystickLookInput, joystickMode, cameraView, gameState, isDead, setPlayerPosition, setPlayerWorldPos, playerName, avatarConfig, tickTime, isHolyAuraActive } = useGameStore();
+  const { joystickInput, joystickLookInput, joystickMode, cameraView, gameState, isDead, setPlayerPosition, setPlayerWorldPos, playerName, avatarConfig, tickTime, isHolyAuraActive, forceTeleportPos, clearTeleport, currentLevel } = useGameStore();
   const keys = useKeyboardControls();
+  const isCrystalPalace = currentLevel > 120;
 
   useFrame((state, delta) => {
-    if (!body.current || gameState !== 'playing' || isDead) return;
+    if (!body.current || gameState !== 'playing') return;
+
+    if (forceTeleportPos) {
+      body.current.setTranslation({ x: forceTeleportPos[0], y: forceTeleportPos[1], z: forceTeleportPos[2] }, true);
+      clearTeleport();
+      return; // Skip normal physics this frame to let teleport settle
+    }
+
+    if (isDead) return;
 
     // Tick down the time
     tickTime(delta);
@@ -313,8 +322,9 @@ export const Player: React.FC<PlayerProps> = ({ startPos }) => {
     // Movement Smoothing using Lerp
     const smoothVx = THREE.MathUtils.lerp(velocity.x, targetVx, 10 * delta);
     const smoothVz = THREE.MathUtils.lerp(velocity.z, targetVz, 10 * delta);
+    const smoothVy = isCrystalPalace ? THREE.MathUtils.lerp(velocity.y, 0, 10 * delta) : velocity.y;
 
-    body.current.setLinvel({ x: smoothVx, y: velocity.y, z: smoothVz }, true);
+    body.current.setLinvel({ x: smoothVx, y: smoothVy, z: smoothVz }, true);
 
     const playerPos = body.current.translation();
     setPlayerWorldPos([playerPos.x, playerPos.y, playerPos.z]);
@@ -365,7 +375,7 @@ export const Player: React.FC<PlayerProps> = ({ startPos }) => {
   const initialZ = startPos ? startPos[1] : 0;
 
   return (
-    <RigidBody ref={body} colliders={false} mass={1} type="dynamic" position={[initialX, 3, initialZ]} enabledRotations={[false, false, false]}>
+    <RigidBody ref={body} colliders={false} mass={1} type="dynamic" position={[initialX, isCrystalPalace ? 5 : 3, initialZ]} enabledRotations={[false, false, false]} gravityScale={isCrystalPalace ? 0 : 1}>
       <CapsuleCollider args={[0.6, 0.4]} position={[0, 0, 0]} />
       <group ref={characterGroup}>
         <BlockyCharacter
@@ -374,7 +384,7 @@ export const Player: React.FC<PlayerProps> = ({ startPos }) => {
           showName={true}
           animPhase={animPhase.current}
         />
-        {isHolyAuraActive && <AngelHelper animPhase={animPhase.current} />}
+        {(isHolyAuraActive || isCrystalPalace) && <AngelHelper animPhase={animPhase.current} />}
       </group>
     </RigidBody>
   );
