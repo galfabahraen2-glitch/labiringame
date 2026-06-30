@@ -3,7 +3,7 @@ import { useGameStore } from '../store';
 import { CELL_SIZE } from './Maze';
 
 export const Minimap: React.FC = () => {
-  const { playerPosition, mazeData, exitPosition } = useGameStore();
+  const { playerPosition, mazeData, exitPosition, otherPlayers } = useGameStore();
 
   if (!mazeData || !exitPosition) return null;
 
@@ -14,6 +14,12 @@ export const Minimap: React.FC = () => {
   // Define exit coordinate
   const exitGridX = Math.round(exitPosition[0] / CELL_SIZE + mazeData[0].length / 2);
   const exitGridZ = Math.round(exitPosition[1] / CELL_SIZE + mazeData.length / 2);
+
+  // Other players coordinates
+  const otherGridPositions = Object.values(otherPlayers).map(p => ({
+    x: Math.round(p.position[0] / CELL_SIZE + mazeData[0].length / 2),
+    z: Math.round(p.position[2] / CELL_SIZE + mazeData.length / 2) // p.position is [x, y, z]
+  }));
 
   return (
     <div style={{
@@ -32,15 +38,22 @@ export const Minimap: React.FC = () => {
       {mazeData.map((row, z) => 
         row.map((cell, x) => {
           let bgColor = cell === 1 ? '#b0b0b0' : 'transparent';
+          let isEntity = false;
           
           // Draw Exit
           if (x === exitGridX && z === exitGridZ) {
             bgColor = '#ff00ff';
+            isEntity = true;
           }
-          
+          // Draw Other Players
+          else if (otherGridPositions.some(p => p.x === x && p.z === z)) {
+            bgColor = '#2ecc71'; // Green color for friends
+            isEntity = true;
+          }
           // Draw Player
-          if (x === playerGridX && z === playerGridZ) {
-            bgColor = '#00e5ff';
+          else if (x === playerGridX && z === playerGridZ) {
+            bgColor = '#00e5ff'; // Cyan color for local player
+            isEntity = true;
           }
 
           return (
@@ -50,7 +63,8 @@ export const Minimap: React.FC = () => {
                 width: '100%',
                 height: '100%',
                 backgroundColor: bgColor,
-                borderRadius: bgColor === '#00e5ff' || bgColor === '#ff00ff' ? '50%' : '0'
+                borderRadius: isEntity ? '50%' : '0',
+                boxShadow: isEntity ? `0 0 4px ${bgColor}` : 'none'
               }}
             />
           );
