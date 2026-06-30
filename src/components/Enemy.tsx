@@ -184,7 +184,7 @@ export const Enemy: React.FC<EnemyProps> = ({ type, initialPosition }) => {
 
   const cfg = ENEMY_CONFIG[type];
 
-  const teleportPlayer = () => {
+  const punishPlayer = () => {
     if (!mazeData || !playerStartPosition) return;
     // Find random open cell
     const openCells: [number, number][] = [];
@@ -270,9 +270,11 @@ export const Enemy: React.FC<EnemyProps> = ({ type, initialPosition }) => {
     }
 
     // Check if enemy touched player (within 1.5 units)
-    if (dist < 1.5 && alertTimerRef.current <= 0) {
-      alertTimerRef.current = 3; // cooldown 3s before next hit
-      teleportPlayer();
+    if (dist < 1.0 && !isHolyAuraActive) {
+      if (alertTimerRef.current <= 0) {
+        punishPlayer();
+        alertTimerRef.current = 2; // Invulnerability timer after hit
+      }
     }
   });
 
