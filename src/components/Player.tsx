@@ -339,8 +339,8 @@ export const Player: React.FC<PlayerProps> = ({ startPos }) => {
 
     // Camera follow
     if (cameraView === 'first-person') {
-      if (characterGroup.current && characterGroup.current.children[1]) {
-        characterGroup.current.children[1].visible = false; // Hide head
+      if (characterGroup.current && characterGroup.current.children[0]) {
+        characterGroup.current.children[0].visible = false; // Hide body completely
       }
       const cameraPos = new THREE.Vector3(playerPos.x, playerPos.y + 1.2, playerPos.z);
       state.camera.position.lerp(cameraPos, 0.2);
@@ -351,8 +351,8 @@ export const Player: React.FC<PlayerProps> = ({ startPos }) => {
       );
       state.camera.lookAt(lookAtPos);
     } else {
-      if (characterGroup.current && characterGroup.current.children[1]) {
-        characterGroup.current.children[1].visible = true; // Show head
+      if (characterGroup.current && characterGroup.current.children[0]) {
+        characterGroup.current.children[0].visible = true; // Show body
       }
       if (cameraView === 'third-person') {
         const cameraPos = new THREE.Vector3(

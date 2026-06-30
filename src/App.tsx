@@ -15,6 +15,7 @@ import { SettingsScreen, TrackRecordScreen } from './components/SettingsScreen';
 import { useGameStore } from './store';
 import { generateMaze } from './utils/mazeGenerator';
 import { audio } from './audioManager';
+import { InstallPrompt } from './components/InstallPrompt';
 
 function GameScene() {
   const { currentLevel, setMazeData, treasures, beggars, exitPosition, playerStartPosition, setTotalTreasures } = useGameStore();
@@ -125,6 +126,7 @@ function App() {
 
       {/* HUD / Menu — always on top */}
       <UI />
+      <InstallPrompt />
     </>
   );
 }
