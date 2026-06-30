@@ -192,26 +192,59 @@ class NetworkManager {
 
       if (data.type === 'position') {
         const defaultAvatar = { skinColor: '#f5cba7', shirtColor: '#2980b9', pantsColor: '#2c3e50', accessory: 'none' as const };
+        const originPeerId = data.peerId || conn.peer;
+        
         useGameStore.getState().setOtherPlayerPosition(
-          conn.peer,          // use conn.peer as the stable ID
+          originPeerId,
           data.position,
           data.rotation,
           data.name || 'Teman',
           data.avatar || defaultAvatar,
         );
+
+        // If I am the host, relay this position to all other connected clients
+        if (this.isHost) {
+          this.connections.forEach(c => {
+            if (c !== conn && c.open) {
+              try { c.send(data); } catch (_) {}
+            }
+          });
+        }
+      } else if (data.type === 'disconnect') {
+        // If a client receives a relayed disconnect
+        const originPeerId = data.peerId || conn.peer;
+        useGameStore.getState().removeOtherPlayer(originPeerId);
+        
+        if (this.isHost) {
+          this.connections.forEach(c => {
+            if (c !== conn && c.open) {
+              try { c.send(data); } catch (_) {}
+            }
+          });
+        }
       }
     });
 
-    conn.on('close', () => {
+    const handleDisconnect = () => {
       console.log('[Network] Player disconnected:', conn.peer);
       this.connections = this.connections.filter(c => c !== conn);
       useGameStore.getState().removeOtherPlayer(conn.peer);
-    });
 
+      // If I am the host, notify other clients that this player disconnected
+      if (this.isHost) {
+        const disconnectMsg = { type: 'disconnect', peerId: conn.peer };
+        this.connections.forEach(c => {
+          if (c.open) {
+            try { c.send(disconnectMsg); } catch (_) {}
+          }
+        });
+      }
+    };
+
+    conn.on('close', handleDisconnect);
     conn.on('error', (err) => {
       console.error('[Network] Data channel error:', err);
-      this.connections = this.connections.filter(c => c !== conn);
-      useGameStore.getState().removeOtherPlayer(conn.peer);
+      handleDisconnect();
     });
   };
 

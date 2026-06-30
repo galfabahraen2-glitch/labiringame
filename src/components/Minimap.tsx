@@ -37,24 +37,9 @@ export const Minimap: React.FC = () => {
     }}>
       {mazeData.map((row, z) => 
         row.map((cell, x) => {
-          let bgColor = cell === 1 ? '#b0b0b0' : 'transparent';
-          let isEntity = false;
-          
-          // Draw Exit
-          if (x === exitGridX && z === exitGridZ) {
-            bgColor = '#ff00ff';
-            isEntity = true;
-          }
-          // Draw Other Players
-          else if (otherGridPositions.some(p => p.x === x && p.z === z)) {
-            bgColor = '#2ecc71'; // Green color for friends
-            isEntity = true;
-          }
-          // Draw Player
-          else if (x === playerGridX && z === playerGridZ) {
-            bgColor = '#00e5ff'; // Cyan color for local player
-            isEntity = true;
-          }
+          const isExit = x === exitGridX && z === exitGridZ;
+          const isOtherPlayer = otherGridPositions.some(p => p.x === x && p.z === z);
+          const isLocalPlayer = x === playerGridX && z === playerGridZ;
 
           return (
             <div 
@@ -62,11 +47,20 @@ export const Minimap: React.FC = () => {
               style={{
                 width: '100%',
                 height: '100%',
-                backgroundColor: bgColor,
-                borderRadius: isEntity ? '50%' : '0',
-                boxShadow: isEntity ? `0 0 4px ${bgColor}` : 'none'
+                backgroundColor: cell === 1 ? '#b0b0b0' : 'transparent',
+                position: 'relative',
               }}
-            />
+            >
+              {isExit && (
+                <div style={{ position: 'absolute', inset: 0, backgroundColor: '#ff00ff', borderRadius: '50%', boxShadow: '0 0 4px #ff00ff' }} />
+              )}
+              {isOtherPlayer && (
+                <div style={{ position: 'absolute', inset: '10%', backgroundColor: '#2ecc71', borderRadius: '50%', boxShadow: '0 0 4px #2ecc71', zIndex: 1 }} />
+              )}
+              {isLocalPlayer && (
+                <div style={{ position: 'absolute', inset: '25%', backgroundColor: '#00e5ff', borderRadius: '50%', boxShadow: '0 0 4px #00e5ff', zIndex: 2 }} />
+              )}
+            </div>
           );
         })
       )}
