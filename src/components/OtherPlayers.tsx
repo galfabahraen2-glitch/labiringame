@@ -7,7 +7,7 @@ export const OtherPlayers: React.FC = () => {
 
   return (
     <>
-      {Object.entries(otherPlayers).filter(([id, data]) => data.level === currentLevel).map(([id, data]) => (
+      {Object.entries(otherPlayers).filter(([_, data]) => data.level === currentLevel).map(([id, data]) => (
         <group key={id} position={data.position} rotation={[0, data.rotation, 0]}>
           <BlockyCharacter
             avatar={data.avatar}
