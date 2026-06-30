@@ -26,18 +26,21 @@ const HolyButtons: React.FC = () => {
   return (
     <div style={{
       position: 'fixed', top: '70px', left: '50%', transform: 'translateX(-50%)',
-      display: 'flex', gap: '10px', zIndex: 40, pointerEvents: 'auto'
+      display: 'flex', gap: '8px', zIndex: 40, pointerEvents: 'auto',
+      width: '90%', maxWidth: '300px', justifyContent: 'center'
     }}>
       <button
         disabled={!isReady}
         onClick={() => { audio.buttonClick(); activateHolyAura(); }}
         style={{
-          background: isHolyAuraActive ? 'rgba(255, 215, 0, 0.8)' : isReady ? 'rgba(255,255,255,0.9)' : 'rgba(100,100,100,0.8)',
+          flex: 1,
+          background: isHolyAuraActive ? 'rgba(255, 215, 0, 0.8)' : isReady ? 'rgba(255,255,255,0.7)' : 'rgba(100,100,100,0.6)',
           color: isHolyAuraActive ? '#fff' : isReady ? '#000' : '#ccc',
-          border: '2px solid #ffd700', borderRadius: '8px', padding: '6px 12px',
-          fontWeight: 'bold', fontSize: '0.85rem', cursor: isReady ? 'pointer' : 'not-allowed',
-          boxShadow: isHolyAuraActive ? '0 0 15px #ffd700' : 'none',
-          fontFamily: 'serif', WebkitTapHighlightColor: 'transparent'
+          border: '1px solid #ffd700', borderRadius: '6px', padding: '4px 6px',
+          fontWeight: 'bold', fontSize: '0.65rem', cursor: isReady ? 'pointer' : 'not-allowed',
+          boxShadow: isHolyAuraActive ? '0 0 10px #ffd700' : 'none',
+          fontFamily: 'serif', WebkitTapHighlightColor: 'transparent',
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
         }}
       >
         ALLAH {cd > 0 ? `(${cd}s)` : ''}
@@ -46,12 +49,14 @@ const HolyButtons: React.FC = () => {
         disabled={!isReady}
         onClick={() => { audio.buttonClick(); activateHolyAura(); }}
         style={{
-          background: isHolyAuraActive ? 'rgba(255, 215, 0, 0.8)' : isReady ? 'rgba(255,255,255,0.9)' : 'rgba(100,100,100,0.8)',
+          flex: 1,
+          background: isHolyAuraActive ? 'rgba(255, 215, 0, 0.8)' : isReady ? 'rgba(255,255,255,0.7)' : 'rgba(100,100,100,0.6)',
           color: isHolyAuraActive ? '#fff' : isReady ? '#000' : '#ccc',
-          border: '2px solid #ffd700', borderRadius: '8px', padding: '6px 12px',
-          fontWeight: 'bold', fontSize: '0.85rem', cursor: isReady ? 'pointer' : 'not-allowed',
-          boxShadow: isHolyAuraActive ? '0 0 15px #ffd700' : 'none',
-          fontFamily: 'serif', WebkitTapHighlightColor: 'transparent'
+          border: '1px solid #ffd700', borderRadius: '6px', padding: '4px 6px',
+          fontWeight: 'bold', fontSize: '0.65rem', cursor: isReady ? 'pointer' : 'not-allowed',
+          boxShadow: isHolyAuraActive ? '0 0 10px #ffd700' : 'none',
+          fontFamily: 'serif', WebkitTapHighlightColor: 'transparent',
+          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
         }}
       >
         MUHAMMAD SAWW {cd > 0 ? `(${cd}s)` : ''}

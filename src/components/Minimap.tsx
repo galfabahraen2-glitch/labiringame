@@ -3,7 +3,7 @@ import { useGameStore } from '../store';
 import { CELL_SIZE } from './Maze';
 
 export const Minimap: React.FC = () => {
-  const { playerPosition, mazeData, exitPosition, otherPlayers } = useGameStore();
+  const { playerPosition, mazeData, exitPosition, otherPlayers, currentLevel } = useGameStore();
 
   if (!mazeData || !exitPosition) return null;
 
@@ -16,7 +16,9 @@ export const Minimap: React.FC = () => {
   const exitGridZ = Math.round(exitPosition[1] / CELL_SIZE + mazeData.length / 2);
 
   // Other players coordinates
-  const otherGridPositions = Object.values(otherPlayers).map(p => ({
+  const otherGridPositions = Object.values(otherPlayers)
+    .filter(p => p.level === currentLevel)
+    .map(p => ({
     x: Math.round(p.position[0] / CELL_SIZE + mazeData[0].length / 2),
     z: Math.round(p.position[2] / CELL_SIZE + mazeData.length / 2) // p.position is [x, y, z]
   }));

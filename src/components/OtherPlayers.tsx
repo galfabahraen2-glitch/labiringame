@@ -3,11 +3,11 @@ import { useGameStore } from '../store';
 import { BlockyCharacter } from './Player';
 
 export const OtherPlayers: React.FC = () => {
-  const otherPlayers = useGameStore(state => state.otherPlayers);
+  const { otherPlayers, currentLevel } = useGameStore();
 
   return (
     <>
-      {Object.entries(otherPlayers).map(([id, data]) => (
+      {Object.entries(otherPlayers).filter(([id, data]) => data.level === currentLevel).map(([id, data]) => (
         <group key={id} position={data.position} rotation={[0, data.rotation, 0]}>
           <BlockyCharacter
             avatar={data.avatar}

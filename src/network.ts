@@ -198,8 +198,9 @@ class NetworkManager {
           originPeerId,
           data.position,
           data.rotation,
-          data.name || 'Teman',
-          data.avatar || defaultAvatar,
+          data.name || 'Pemain',
+          data.avatar || { skinColor: '#f1c27d', shirtColor: '#3498db', pantsColor: '#2c3e50', accessory: 'none' },
+          data.currentLevel || 1
         );
 
         // If I am the host, relay this position to all other connected clients
@@ -264,6 +265,7 @@ class NetworkManager {
       rotation: rot,
       name: state.playerName,
       avatar: state.avatarConfig,
+      currentLevel: state.currentLevel,
     };
 
     this.connections.forEach(conn => {

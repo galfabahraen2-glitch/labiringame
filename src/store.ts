@@ -45,7 +45,7 @@ interface State {
   playerStartPosition: [number, number] | null
   treasures: { x: number, z: number, id: string }[]
   beggars: { x: number, z: number, id: string }[]
-  otherPlayers: Record<string, { position: [number, number, number], rotation: number, name: string, avatar: AvatarConfig }>
+  otherPlayers: Record<string, { position: [number, number, number], rotation: number, name: string, avatar: AvatarConfig, level: number }>
   // Player identity
   playerName: string
   avatarConfig: AvatarConfig
@@ -70,7 +70,7 @@ interface State {
   setPlayerWorldPos: (pos: [number, number, number]) => void
   teleportPlayer: (pos: [number, number, number]) => void
   clearTeleport: () => void
-  setOtherPlayerPosition: (id: string, pos: [number, number, number], rot: number, name: string, avatar: AvatarConfig) => void
+  setOtherPlayerPosition: (id: string, pos: [number, number, number], rot: number, name: string, avatar: AvatarConfig, level: number) => void
   removeOtherPlayer: (id: string) => void
   // Special Abilities
   activateHolyAura: () => void
@@ -190,8 +190,8 @@ export const useGameStore = create<State>((set, get) => ({
   teleportPlayer: (pos) => set({ forceTeleportPos: pos, playerWorldPos: pos }),
   clearTeleport: () => set({ forceTeleportPos: null }),
   
-  setOtherPlayerPosition: (id, pos, rot, name, avatar) => set((s) => ({
-    otherPlayers: { ...s.otherPlayers, [id]: { position: pos, rotation: rot, name, avatar } }
+  setOtherPlayerPosition: (id, pos, rot, name, avatar, level) => set((s) => ({
+    otherPlayers: { ...s.otherPlayers, [id]: { position: pos, rotation: rot, name, avatar, level } }
   })),
   
   removeOtherPlayer: (id) => set((s) => {
@@ -264,6 +264,7 @@ export const useGameStore = create<State>((set, get) => ({
         // I will just max them both out.
         beggars: s.beggars.filter(b => b.id !== id)
       });
+      get().activateHolyAura(); // Instantly grant Holy Aura (invincibility/speed)
       return true; // Success
     }
     return false; // Failed, not enough

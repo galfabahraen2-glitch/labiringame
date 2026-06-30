@@ -72,7 +72,7 @@ export function generateMaze(level: number): MazeResult {
 
   // Place treasures randomly on empty paths
   const treasures: {x: number, z: number}[] = [];
-  const treasureCount = 3 + Math.floor(level / 10);
+  const treasureCount = 8 + Math.floor(level / 3);
   
   let attempts = 0;
   while (treasures.length < treasureCount && attempts < 1000) {
@@ -91,7 +91,7 @@ export function generateMaze(level: number): MazeResult {
 
   // Place beggars
   const beggars: {x: number, z: number}[] = [];
-  const beggarCount = 1 + Math.floor(level / 5);
+  const beggarCount = 1 + Math.floor(level / 10);
   
   attempts = 0;
   while (beggars.length < beggarCount && attempts < 1000) {

@@ -24,9 +24,11 @@ export function Beggar({ id, position }: { id: string; position: [number, number
       if (!given) {
         meshRef.current.rotation.y = Math.atan2(dx, dz);
         
-        // Show prompt if player is near
-        if (dist < 3.5 && !showPrompt) {
-          setShowPrompt(true);
+        // Auto give alms if close enough and have zamrud
+        if (dist < 2.0 && score >= 1) {
+          handleGive();
+        } else if (dist < 3.5 && score < 1) {
+          if (!showPrompt) setShowPrompt(true);
         } else if (dist >= 3.5 && showPrompt) {
           setShowPrompt(false);
         }
@@ -42,7 +44,7 @@ export function Beggar({ id, position }: { id: string; position: [number, number
       setShowPrompt(false);
       audio.collectTreasure(); // the miracle sound
     } else {
-      audio.buttonClick(); // Maybe error sound, but button click for now
+      audio.buttonClick(); // error sound
     }
   };
 
@@ -69,16 +71,12 @@ export function Beggar({ id, position }: { id: string; position: [number, number
         <meshStandardMaterial color="#666" metalness={0.5} roughness={0.8} />
       </mesh>
       
-      {/* Floating Prompt */}
+      {/* Floating Prompt if not enough Zamrud */}
       {showPrompt && (
         <group position={[0, 2.5, 0]}>
-          <mesh onClick={handleGive} onPointerOver={() => document.body.style.cursor = 'pointer'} onPointerOut={() => document.body.style.cursor = 'auto'}>
-            <planeGeometry args={[2, 0.8]} />
-            <meshBasicMaterial color={score >= 1 ? "#2ecc71" : "#e74c3c"} transparent opacity={0.8} side={THREE.DoubleSide} />
-          </mesh>
-          <Html position={[0, 0, 0.05]} center transform pointerEvents="none">
-            <div style={{ color: 'white', fontWeight: 'bold', fontSize: '18px', textAlign: 'center', width: '200px', userSelect: 'none' }}>
-              {score >= 1 ? "Sedekah 1 Zamrud" : "Butuh 1 Zamrud"}
+          <Html position={[0, 0, 0]} center transform pointerEvents="none">
+            <div style={{ color: '#e74c3c', fontWeight: 'bold', fontSize: '18px', textAlign: 'center', width: '200px', userSelect: 'none', background: 'rgba(0,0,0,0.5)', padding: '4px', borderRadius: '4px' }}>
+              "Aku lapar... (Butuh 1 Zamrud)"
             </div>
           </Html>
         </group>
