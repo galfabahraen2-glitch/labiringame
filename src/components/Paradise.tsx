@@ -1,8 +1,6 @@
-import React, { useRef } from 'react';
-import { useFrame } from '@react-three/fiber';
+import React from 'react';
 import { RigidBody } from '@react-three/rapier';
-import { Html, Text } from '@react-three/drei';
-import * as THREE from 'three';
+import { Html } from '@react-three/drei';
 
 // ─── Simple Blocky Tree (Kurma, Anggur, etc) ───────────────────────────────
 const FruitTree = ({ position, type }: { position: [number, number, number], type: 'kurma' | 'anggur' | 'pisang' | 'tin' | 'apel' | 'jeruk' }) => {

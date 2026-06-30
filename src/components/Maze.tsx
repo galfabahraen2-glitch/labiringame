@@ -24,7 +24,6 @@ export const Maze: React.FC = () => {
   const floorColor = isCrystalPalace ? "#e0f7fa" : "#808080";
   const wallRoughness = isCrystalPalace ? 0.1 : 0.7;
   const floorRoughness = isCrystalPalace ? 0.1 : 0.8;
-  const transmission = isCrystalPalace ? 0.9 : 0;
 
   for (let z = 0; z < mazeData.length; z++) {
     for (let x = 0; x < mazeData[z].length; x++) {

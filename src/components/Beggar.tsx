@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { useGameStore } from '../store';
 import { audio } from '../audioManager';
@@ -40,7 +40,7 @@ export function Beggar({ id, position }: { id: string; position: [number, number
     if (success) {
       setGiven(true);
       setShowPrompt(false);
-      audio.holyAura(); // the miracle sound
+      audio.collectTreasure(); // the miracle sound
     } else {
       audio.buttonClick(); // Maybe error sound, but button click for now
     }
